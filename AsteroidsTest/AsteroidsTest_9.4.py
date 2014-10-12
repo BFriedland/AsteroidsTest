@@ -3,14 +3,6 @@ import sys
 import math
 import random
 
-'''
-
-"A Freedlabs production." ... "An Excessively Time Consuming Production." ... "A Fun and Educational Production." ... "A CoffeeFueled Production."
-
-... Nahh. Less text more pew.
-
-'''
-
 
 #### Constants ####
 
