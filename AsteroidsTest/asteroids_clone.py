@@ -431,9 +431,6 @@ class GameObject:
         to increment velocities appropriately.
         '''
 
-        # Globals bad! Objects good! Refactor this when I have even more time.
-        global ratio_of_max_to_current_this_is_a_debugging_variable
-
         # Resolve the angular offset of the velocities.
         # This uses the rotation function to properly apply delta-V
         # in the direction it needs to be going.
@@ -449,171 +446,92 @@ class GameObject:
                 0,
                 self.current_angle_in_degrees)
 
+        # It's not the euclidean distance, it's just the Pythagorean
+        # theorem... Because these are velocities.
         self.x_velocity += rotated_x_velocity_increment
         self.y_velocity += rotated_y_velocity_increment
 
+        hypotenuse_of_x_and_y_velocities = math.sqrt(
+            (self.x_velocity * self.x_velocity)
+            + (self.y_velocity * self.y_velocity))
 
-
-
-        hypotenuse_of_x_and_y_velocities = math.sqrt((self.x_velocity * self.x_velocity) + (self.y_velocity * self.y_velocity))
-
-        # Mocking an object is bad. I should change return_euclidean_distance
-        # to take xes and ys maybe? No? blah! It's not the euclidean distance,
-        # it's just the Pythagorean theorem... Because these are velocities.
-        # {'x': self.x_velocity, 'y': self.y_velocity}
-
-        # hypotenuse_of_x_and_y_velocities = return_euclidean_distance()
-
-
+        # The micro-offset is to prevent divide-by-zero errors.
         if hypotenuse_of_x_and_y_velocities >= self.max_velocity:
-        
-            ratio_of_max_velocity_to_current_velocity = self.max_velocity / (hypotenuse_of_x_and_y_velocities + 0.00001)
-    
-        # # # # Debugging ---v using a global so it doesn't spam my reporting prints
-            ratio_of_max_to_current_this_is_a_debugging_variable = ratio_of_max_velocity_to_current_velocity
-    
-            self.x_velocity = self.x_velocity * ratio_of_max_velocity_to_current_velocity
-    
-            self.y_velocity = self.y_velocity * ratio_of_max_velocity_to_current_velocity
-            
-            
-            
-    
-        '''
-        ## This section returns the values that will be incrementing the velocity, normalized to +/- 1   ---v   | this is useful in case acceleration values are anything OTHER than 1
-        x_acceleration_normalized_to_plus_or_minus_one = x_acceleration / abs(x_acceleration)
-        y_acceleration_normalized_to_plus_or_minus_one = y_acceleration / abs(y_acceleration)
-        ## Rotate them to useful numbers...
-        normalized_rotated_x_velocity_increment, normalized_rotated_y_velocity_increment = rotate_these_points_around_that_point(x_acceleration_normalized_to_plus_or_minus_one, y_acceleration_normalized_to_plus_or_minus_one, 0, 0, self.current_angle_in_degrees)
-        ## Then figure out the ratio. If x == +1 and y == +1, then the vector sum is ( (0.71 + 0.71) = 1.42 ) which is bad because it's 0.42 higher than the max speed.
-        ## So we need the ratio to multiply both X and Y acceleration by to get the REVERSE acceleration for the one that's too fast, and the forwards accel for the one that's going in the right direction.
-        
-        ## First take the sum...
-        normalized_vector_sum = (normalized_rotated_x_velocity_increment + normalized_rotated_y_velocity_increment)
-        
-        ## Then 1 by the sum to get the ratio that 1 is to the sum. Tautological but still helpful explanations yay!
-        ratio_of_max_speed_to_current_speed 1 / normalized_vector_sum
-        
-        # # # # this is where I realized it -^
-        '''
-        
-        
-        
-        
-        '''
-        # # # # BEGIN OLD CODE SECTION
-        
-        
-        # # # # X
-        
-        ##  if    abs(net speed) > 10 ...           and is vectoring rightwards...  and wants to increment rightwards...  
-        if ((hypotenuse_of_x_and_y_velocities > self.max_velocity) and (self.x_velocity >= 0) and (rotated_x_velocity_increment > 0)): # # # # Goal: I want the thing to NOT be going >10 pixels/tick UNROTATED velocity.
-            ## Then do nothing.
-            self.x_velocity -= 0
-            
-        ##  if abs(net speed) > 10 ...                and is vectoring leftwards...    and wants to increment leftwards...    
-        elif ((hypotenuse_of_x_and_y_velocities > self.max_velocity) and (self.x_velocity <= 0) and (rotated_x_velocity_increment < 0)):
-            ## Then do nothing.
-            self.x_velocity += 0
-            
-        else:  ## Otherwise...
-            ## ... increment x_velocity by the appropriate value.
-            self.x_velocity += rotated_x_velocity_increment
-        
-            
-        # # # # Y
-        
-        ##  if    abs(net speed) > 10 ...           and is vectoring downwards...  and wants to increment downwards...     (( downwards is positive y values in pixelland ))
-        if ((hypotenuse_of_x_and_y_velocities > self.max_velocity) and (self.y_velocity >= 0) and (rotated_y_velocity_increment > 0)):
-            ## Then do nothing.
-            self.y_velocity -= 0
-        
-        ##     if abs(net speed) > 10 ...                and is vectoring upwards...    and wants to increment upwards...    
-        elif ((hypotenuse_of_x_and_y_velocities > self.max_velocity) and (self.y_velocity <= 0) and (rotated_y_velocity_increment < 0)):
-            ## Then do nothing.
-            self.y_velocity += 0
-                
-        else:  ## Otherwise...
-            ## ... increment y_velocity by the appropriate value.
-            self.y_velocity += rotated_y_velocity_increment
-        
-        
-        # # # # END OLD CODE SECTION
-        '''
-        
-        
-        
-        
+            ratio_of_max_velocity_to_current_velocity \
+                = (self.max_velocity
+                   / (hypotenuse_of_x_and_y_velocities + 0.00001))
 
-        # # # # Theta
-        
-        ## Very similar to the other velocities, except it doesn't have to care about the sign difference between grid direction and total velocity when checking its cap.
+            self.x_velocity = (self.x_velocity
+                               * ratio_of_max_velocity_to_current_velocity)
+            self.y_velocity = (self.y_velocity
+                               * ratio_of_max_velocity_to_current_velocity)
+
+        # # # # Theta (angular velocity)
+
+        # Very similar to the other velocities, except it doesn't
+        # have to care about the sign difference between grid
+        # direction and total velocity when checking its cap.
         if ((self.angular_velocity > 10) and (angular_acceleration > 0)):
             self.angular_velocity -= 0
-            
         elif ((self.angular_velocity < -10) and (angular_acceleration < 0)):
             self.angular_velocity += 0
-        
         else:
             self.angular_velocity += angular_acceleration
-                
-                
-        
-        
-        
-        
-    
-    def brake_all_velocities(self, only_braking_angular_velocity=False, is_gradual_braking=False):
-    
-    
-    
-    
-        ''' Applies acceleration to the GameObject's x_velocity, y_velocity, current_angle_in_degrees values, consistently opposite to the direction of its velocities' current values. '''
-        
-        if is_gradual_braking == True:
+
+    def brake_all_velocities(self,
+                             only_braking_angular_velocity=False,
+                             is_gradual_braking=False):
+        '''
+        Applies acceleration to the GameObject's x_velocity,
+        y_velocity, current_angle_in_degrees values, consistently
+        opposite to the direction of its velocities' current values.
+        '''
+
+        if is_gradual_braking is True:
             braking_coefficient = 0.1
         else:
             braking_coefficient = 0.4
-        
 
-        if only_braking_angular_velocity == False:        
-                
-                
-            
-            hypotenuse_of_x_and_y_velocities = math.sqrt((self.x_velocity * self.x_velocity) + (self.y_velocity * self.y_velocity))
-        
+        if only_braking_angular_velocity is False:
+            hypotenuse_of_x_and_y_velocities = math.sqrt(
+                (self.x_velocity * self.x_velocity)
+                + (self.y_velocity * self.y_velocity))
             if hypotenuse_of_x_and_y_velocities >= braking_coefficient:
-                ratio_of_minused_hypotenuse_to_hypotenuse = ((hypotenuse_of_x_and_y_velocities - braking_coefficient) / ( hypotenuse_of_x_and_y_velocities))
-                
-                self.x_velocity = (self.x_velocity * ratio_of_minused_hypotenuse_to_hypotenuse)
-                self.y_velocity = (self.y_velocity * ratio_of_minused_hypotenuse_to_hypotenuse)
-            
+                ratio_of_minused_hypotenuse_to_hypotenuse \
+                    = ((hypotenuse_of_x_and_y_velocities - braking_coefficient)
+                       / hypotenuse_of_x_and_y_velocities)
+                self.x_velocity \
+                    = (self.x_velocity
+                        * ratio_of_minused_hypotenuse_to_hypotenuse)
+                self.y_velocity \
+                    = (self.y_velocity
+                        * ratio_of_minused_hypotenuse_to_hypotenuse)
             elif hypotenuse_of_x_and_y_velocities < braking_coefficient:
                 self.x_velocity = 0
                 self.y_velocity = 0
-        
-                
-            
-        if (abs(self.angular_velocity) > braking_coefficient):    
-            ## If a nontrivial adjustment needs to be made to angular velocity...
+
+        if abs(self.angular_velocity) > braking_coefficient:
+            # If a nontrivial adjustment needs to be made to angular velocity:
             if self.angular_velocity > 0:
                 self.adjust_all_velocities(0, 0, (braking_coefficient * -1))
             elif self.angular_velocity < 0:
                 self.adjust_all_velocities(0, 0, braking_coefficient)
 
-        
-        elif (abs(self.angular_velocity) <= braking_coefficient):
-            ## Otherwise make the trivial adjustment.
+        elif abs(self.angular_velocity) <= braking_coefficient:
+            # Otherwise, make the trivial adjustment.
             self.angular_velocity = 0
-        
-        
-    def decrement_duration_and_if_necessary_destroy(self, supplied_duration_decrement=0):
-        ''' Decrement remaining duration by supplied duration decrement. If (self.duration_remaining <= 0) then destroy self. Good for debris objects. '''
-        
-        ## This is in GameObject because I want it to be usable for Shot objects, as well. Could benefit from refactoring into a prototype, perhaps.
-        
-        self.duration_remaining -= supplied_duration_decrement
-        
+
+    def decrement_duration_and_if_necessary_destroy(self,
+                                                    duration_decrement=0):
+        '''
+        Decrement remaining duration by supplied duration decrement.
+        If (self.duration_remaining <= 0) then destroy self.
+        Used for debris objects.
+        '''
+
+        # This is in GameObject because I want it
+        # to be usable for Shot objects, as well.
+        self.duration_remaining -= duration_decrement
         if self.duration_remaining <= 0:
             if self.is_debris_object:
                 if self in debris_objects_array:
@@ -621,8 +539,7 @@ class GameObject:
             if self.is_shot_object:
                 if self in shot_objects_array:
                     shot_objects_array.remove(self)
-        
-        
+
 
 class Asteroid(GameObject):
 
