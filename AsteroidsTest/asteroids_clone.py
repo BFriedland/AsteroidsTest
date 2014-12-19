@@ -542,184 +542,199 @@ class GameObject:
 
 
 class Asteroid(GameObject):
+    '''
+    Make a GameObject with the properties of an asteroid.
+    '''
 
-    ''' Make a GameObject with the properties of an asteroid. '''
-    
     def spawn_debris_cloud(self):
-        ''' Delete the Asteroid and spawn a debris cloud at its location. '''
-        
-        number_of_new_debris_objects_to_be_created = random.randint(3, 8)
-        
-        for each in range(0, number_of_new_debris_objects_to_be_created):
-            ## Generate a vector in a random direction at precisely 10 speed.
+        '''
+        Delete the Asteroid and spawn a debris cloud at its location.
+        '''
 
+        number_of_new_debris_objects_to_be_created = random.randint(3, 8)
+        for each in range(0, number_of_new_debris_objects_to_be_created):
+            # Generate a vector in a random direction at precisely 10 speed.
             random_angle = random.randint(0, 359)
-            random_x_velocity_result, random_y_velocity_result = rotate_these_points_around_that_point(0, -10, 0, 0, random_angle)
-            
-            ## Note: It would be nice if debris inherited velocity from the asteroid, so it appeared to actually be fragments of it, but that isn't how Asteroids! works.
-            
-            
-            '''
-            # Old code
-            ## NOTE that this method of generating a random direction favors diagonals! Doing rotation calls on an angle before the object is even instantiated seemed wrong, somehow. But it's not.
-            
-            random_x_velocity_seed = random.random()
-            random_y_velocity_seed = random.random()
-            hypotenuse_of_random_velocity_seeds = math.sqrt((random_x_velocity_seed * random_x_velocity_seed) + (random_y_velocity_seed * random_y_velocity_seed))
-            ratio_of_debris_max_velocity_to_seed_hypotenuse = (10 / hypotenuse_of_random_velocity_seeds)
-            random_x_velocity_result = random_x_velocity_seed * ratio_of_debris_max_velocity_to_seed_hypotenuse
-            random_y_velocity_result = random_y_velocity_seed * ratio_of_debris_max_velocity_to_seed_hypotenuse        
-            '''
-            
-            random_duration_remaining = random.randint(4, 12)
-            #random_duration_remaining = 5     #   ((random_duration_remaining_seed * 1.5) + 0.5)
-            
-            
-            new_debris_object = Debris(self.x, self.y, random_x_velocity_result, random_y_velocity_result, 0, size=4, programmatic_object_shape=-1, is_debris_object=True, duration_remaining=random_duration_remaining)
-            
+            # It would be nice if debris inherited velocity from
+            # the asteroid, so it appeared to actually be fragments
+            # of it, but that isn't how Asteroids! works.
+            random_x_velocity_result, random_y_velocity_result \
+                = rotate_these_points_around_that_point(0, -10, 0, 0,
+                                                        random_angle)
+            random_duration = random.randint(4, 12)
+            new_debris_object = Debris(self.x, self.y,
+                                       random_x_velocity_result,
+                                       random_y_velocity_result,
+                                       0, size=4, programmatic_object_shape=-1,
+                                       is_debris_object=True,
+                                       duration_remaining=random_duration)
             debris_objects_array.append(new_debris_object)
-            
-            ##DEBUGGING
-            #asteroid_objects_array.append(new_debris_object)
-    
-    
-    def break_large_asteroid_into_two_smaller_ones(self, shot_x_velocity, shot_y_velocity, shot_size, shot_angular_velocity=None):
-        ''' Create two new asteroids using physical info from the current asteroid. ''' 
-    
-    
-        ratio_of_shot_size_to_asteroid_size = (shot_size / self.size)
-        
-        ## X and Y velocities
-        sum_of_shot_and_asteroid_x_velocities = ((shot_x_velocity * ratio_of_shot_size_to_asteroid_size) + self.x_velocity)
-        
-        sum_of_shot_and_asteroid_y_velocities = ((shot_y_velocity * ratio_of_shot_size_to_asteroid_size) + self.y_velocity)        
-        
-        hypotenuse_of_shot_and_asteroid_velocities = math.sqrt((sum_of_shot_and_asteroid_x_velocities * sum_of_shot_and_asteroid_x_velocities) + (sum_of_shot_and_asteroid_y_velocities * sum_of_shot_and_asteroid_y_velocities))
-        
+
+    def break_large_asteroid_into_two_smaller_ones(self,
+                                                   shot_x_velocity,
+                                                   shot_y_velocity,
+                                                   shot_size,
+                                                   shot_angular_velocity=None):
+        '''
+        Create two new asteroids using information from the current asteroid.
+        '''
+
+        ratio_of_shot_size_to_asteroid_size = shot_size / self.size
+        # # X and Y velocities
+        sum_of_shot_and_asteroid_x_velocities \
+            = ((shot_x_velocity * ratio_of_shot_size_to_asteroid_size)
+               + self.x_velocity)
+        sum_of_shot_and_asteroid_y_velocities \
+            = ((shot_y_velocity * ratio_of_shot_size_to_asteroid_size)
+               + self.y_velocity)
+        hypotenuse_of_shot_and_asteroid_velocities \
+            = math.sqrt((sum_of_shot_and_asteroid_x_velocities
+                         * sum_of_shot_and_asteroid_x_velocities)
+                        + (sum_of_shot_and_asteroid_y_velocities
+                           * sum_of_shot_and_asteroid_y_velocities))
         if hypotenuse_of_shot_and_asteroid_velocities > 10:
-            ## Reduce the current vector sum to the max velocity vector sum of the current asteroid.
-            
-            number_of_max_velocities_per_current_velocity = self.max_velocity / (hypotenuse_of_shot_and_asteroid_velocities + 0.00001)
-            
-            sum_of_shot_and_asteroid_x_velocities = sum_of_shot_and_asteroid_x_velocities * number_of_max_velocities_per_current_velocity
-            sum_of_shot_and_asteroid_y_velocities = sum_of_shot_and_asteroid_y_velocities * number_of_max_velocities_per_current_velocity
-        
-        ## multiply both x and y vectors by 2, take a random proportion and apply each side of it to the child asteroids
-        sum_of_x_velocities_multiplied_by_two = sum_of_shot_and_asteroid_x_velocities * 2
-        sum_of_y_velocities_multiplied_by_two = sum_of_shot_and_asteroid_y_velocities * 2
-        
+            # Reduce the current vector sum to the max
+            # velocity vector sum of the current asteroid.
+            number_of_max_velocities_per_current_velocity \
+                = (self.max_velocity
+                   / (hypotenuse_of_shot_and_asteroid_velocities + 0.00001))
+            sum_of_shot_and_asteroid_x_velocities \
+                = (sum_of_shot_and_asteroid_x_velocities
+                   * number_of_max_velocities_per_current_velocity)
+            sum_of_shot_and_asteroid_y_velocities \
+                = (sum_of_shot_and_asteroid_y_velocities
+                   * number_of_max_velocities_per_current_velocity)
+        # Multiply both x and y vectors by 2,
+        # take a random proportion and apply
+        # each side of it to the child Asteroids:
+        sum_of_x_velocities_multiplied_by_two \
+            = sum_of_shot_and_asteroid_x_velocities * 2
+        sum_of_y_velocities_multiplied_by_two \
+            = sum_of_shot_and_asteroid_y_velocities * 2
         random_x_velocity_splitting_ratio = random.random()
         random_y_velocity_splitting_ratio = random.random()
-
-        first_split_asteroid_x_velocity = (sum_of_x_velocities_multiplied_by_two * random_x_velocity_splitting_ratio)
-        second_split_asteroid_x_velocity = (sum_of_x_velocities_multiplied_by_two - first_split_asteroid_x_velocity)
-        
-            
-        if first_split_asteroid_x_velocity < (sum_of_x_velocities_multiplied_by_two * 0.5):
-            first_split_asteroid_x_velocity += (sum_of_x_velocities_multiplied_by_two * 0.5)
-        if second_split_asteroid_x_velocity < (sum_of_x_velocities_multiplied_by_two * 0.5):
-            second_split_asteroid_x_velocity += (sum_of_x_velocities_multiplied_by_two * 0.5)
-        
-        
-        first_split_asteroid_y_velocity = (sum_of_y_velocities_multiplied_by_two * random_y_velocity_splitting_ratio)        
-        second_split_asteroid_y_velocity = (sum_of_y_velocities_multiplied_by_two - first_split_asteroid_y_velocity)
-        
-        if first_split_asteroid_y_velocity < (sum_of_y_velocities_multiplied_by_two * 0.5):
-            first_split_asteroid_y_velocity += (sum_of_y_velocities_multiplied_by_two * 0.5)
-        if second_split_asteroid_y_velocity < (sum_of_y_velocities_multiplied_by_two * 0.5):
-            second_split_asteroid_y_velocity += (sum_of_y_velocities_multiplied_by_two * 0.5)
-        
-        ## Note: This may need the max_velocity limitation treatment added to it if asteroid vels get out of hand.
-        
-        
-        
-        ## Angular velocity    |  Note: May want to do the separate randomization thing seen above to this, too
-        
-        ## Ahem... uh... shots don't have angular velocities. But if you ever want to cause some larger object to split asteroids, this is the code you could possibly repurpose!
-        #
-        #if shot_angular_velocity is not None:
-        #    sum_of_shot_and_asteroid_angular_velocities = ((shot_angular_velocity * ratio_of_shot_size_to_asteroid_size) + self.angular_velocity)
-        #    if abs(sum_of_shot_and_asteroid_angular_velocities) > 10:
-        #        if sum_of_shot_and_asteroid_angular_velocities > 0:
-        #            sum_of_shot_and_asteroid_angular_velocities = 10
-        #        else:
-        #            sum_of_shot_and_angular_velocities = -10
-        #else:
-        #    sum_of_shot_and_asteroid_angular_velocities = self.angular_velocity ## | Blergh... cut it all out! ALL OF IT! Auuugh...
-        
+        first_split_asteroid_x_velocity \
+            = (sum_of_x_velocities_multiplied_by_two
+               * random_x_velocity_splitting_ratio)
+        second_split_asteroid_x_velocity \
+            = (sum_of_x_velocities_multiplied_by_two
+               - first_split_asteroid_x_velocity)
+        if (first_split_asteroid_x_velocity
+           < (sum_of_x_velocities_multiplied_by_two * 0.5)):
+            first_split_asteroid_x_velocity \
+                += (sum_of_x_velocities_multiplied_by_two * 0.5)
+        if (second_split_asteroid_x_velocity
+           < (sum_of_x_velocities_multiplied_by_two * 0.5)):
+            second_split_asteroid_x_velocity \
+                += (sum_of_x_velocities_multiplied_by_two * 0.5)
+        first_split_asteroid_y_velocity \
+            = (sum_of_y_velocities_multiplied_by_two
+               * random_y_velocity_splitting_ratio)
+        second_split_asteroid_y_velocity \
+            = (sum_of_y_velocities_multiplied_by_two
+               - first_split_asteroid_y_velocity)
+        if (first_split_asteroid_y_velocity
+           < (sum_of_y_velocities_multiplied_by_two * 0.5)):
+            first_split_asteroid_y_velocity \
+                += (sum_of_y_velocities_multiplied_by_two * 0.5)
+        if (second_split_asteroid_y_velocity
+           < (sum_of_y_velocities_multiplied_by_two * 0.5)):
+            second_split_asteroid_y_velocity \
+                += (sum_of_y_velocities_multiplied_by_two * 0.5)
+        # # Angular velocity
         random_angular_velocity_seed = (random.randint(-10, 10))
         random_angular_velocity_seed_splitter = random.random()
-        
-        
-        first_split_asteroid_angular_velocity = (random_angular_velocity_seed * random_angular_velocity_seed_splitter)
-        second_split_asteroid_angular_velocity = ((random_angular_velocity_seed - first_split_asteroid_angular_velocity) * -1)
-        
+        first_split_asteroid_angular_velocity \
+            = (random_angular_velocity_seed
+               * random_angular_velocity_seed_splitter)
+        second_split_asteroid_angular_velocity \
+            = ((random_angular_velocity_seed
+                - first_split_asteroid_angular_velocity)
+               * -1)
+
         if self.size == 100:
             both_split_asteroids_size = 50
         elif self.size == 50:
             both_split_asteroids_size = 20
-        else:
-            # print("Error in break_large_asteroid_into_two_smaller_ones(): self.size == " + str(self.size))
-            pass
-        
-        ## Change the top end of this range to include all the new asteroid shape numbers coded in.
-        ## Actually, create_new_asteroid already does this. Nevermind.
-        #random_asteroid_shape = random.randint(1, 1)    
+
         random_asteroid_shape = None
-    
-        ## Create the two new asteroids
-        create_new_asteroid_object(supplied_starting_x=self.x, supplied_starting_y=self.y, supplied_x_velocity=first_split_asteroid_x_velocity, supplied_y_velocity=first_split_asteroid_y_velocity, supplied_angular_velocity=first_split_asteroid_angular_velocity, supplied_asteroid_size=both_split_asteroids_size, supplied_asteroid_shape=random_asteroid_shape)
-        create_new_asteroid_object(supplied_starting_x=self.x, supplied_starting_y=self.y, supplied_x_velocity=second_split_asteroid_x_velocity, supplied_y_velocity=second_split_asteroid_y_velocity, supplied_angular_velocity=second_split_asteroid_angular_velocity, supplied_asteroid_size=both_split_asteroids_size, supplied_asteroid_shape=random_asteroid_shape)
-        
-        
-        
-        
-        
+
+        create_new_asteroid_object(supplied_starting_x=self.x,
+                                   supplied_starting_y=self.y,
+                                   supplied_x_velocity=first_split_asteroid_x_velocity,
+                                   supplied_y_velocity=first_split_asteroid_y_velocity,
+                                   supplied_angular_velocity=first_split_asteroid_angular_velocity,
+                                   supplied_asteroid_size=both_split_asteroids_size,
+                                   supplied_asteroid_shape=random_asteroid_shape)
+        create_new_asteroid_object(supplied_starting_x=self.x,
+                                   supplied_starting_y=self.y,
+                                   supplied_x_velocity=second_split_asteroid_x_velocity,
+                                   supplied_y_velocity=second_split_asteroid_y_velocity,
+                                   supplied_angular_velocity=second_split_asteroid_angular_velocity,
+                                   supplied_asteroid_size=both_split_asteroids_size,
+                                   supplied_asteroid_shape=random_asteroid_shape)
+
+
 class PlayerShip(GameObject):
+    '''
+    Make a GameObject controlled by either the player or the aliens.
+    '''
 
-    ''' Make a GameObject controlled by either the player or the aliens. '''
-    
-    def firin_mah_lazor(self):
+    def fire_particle_cannon(self):
+        '''
+        Fire a shot with position and velocity
+        info inherited from the firing ship.
+        '''
 
-        ''' Fire a shot with position and velocity info inherited from the firing ship. '''
-
-        ## Where it's firing from:   ((the front point of the ship))
+        # Where it's firing from:   ((the front point of the ship))
         ship_front_tip_x = self.x
         ship_front_tip_y = (self.y - self.radius)
-        rotated_ship_tip_x, rotated_ship_tip_y = rotate_these_points_around_that_point(ship_front_tip_x, ship_front_tip_y, self.x, self.y, self.current_angle_in_degrees)
+        rotated_ship_tip_x, rotated_ship_tip_y \
+            = rotate_these_points_around_that_point(ship_front_tip_x,
+                                                    ship_front_tip_y,
+                                                    self.x,
+                                                    self.y,
+                                                    self.current_angle_in_degrees)
         shot_start_location_x = rotated_ship_tip_x
         shot_start_location_y = rotated_ship_tip_y
-        
 
-        
-        
-        ## The vector it's traveling in:
-        
-        rotated_shot_velocity_x_modifier, rotated_shot_velocity_y_modifier = rotate_these_points_around_that_point(0, -14, 0, 0, self.current_angle_in_degrees)
-        
-        if SHOTS_INHERIT_VELOCITY == True:
-            shot_velocity_seed_x = (self.x_velocity + rotated_shot_velocity_x_modifier)
-            shot_velocity_seed_y = (self.y_velocity + rotated_shot_velocity_y_modifier)
+        # The vector it's traveling along:
+        rotated_shot_velocity_x_modifier, rotated_shot_velocity_y_modifier \
+            = rotate_these_points_around_that_point(0, -14, 0, 0,
+                                                    self.current_angle_in_degrees)
+
+        if SHOTS_INHERIT_VELOCITY is True:
+            shot_velocity_seed_x \
+                = self.x_velocity + rotated_shot_velocity_x_modifier
+            shot_velocity_seed_y \
+                = self.y_velocity + rotated_shot_velocity_y_modifier
         else:
             shot_velocity_seed_x = rotated_shot_velocity_x_modifier
             shot_velocity_seed_y = rotated_shot_velocity_y_modifier
-        
-        
-        ## Make and append the shot object:
-        new_shot_object = Shot(shot_start_location_x, shot_start_location_y, shot_velocity_seed_x, shot_velocity_seed_y, 0, self.current_angle_in_degrees, is_owned_by_player=self.is_owned_by_player, is_shot_object=True, programmatic_object_shape=-1, size=4, duration_remaining=26)
-        shot_objects_array.append(new_shot_object)
-        
-        
-        ## Repulsion effect on the ship. Tee hee.
-        ##IMPORTANT: Is it -1 or +1 for a tiny 10-size object to be repelled from a 40 size ship? (( It's +1, ship forwards is negative Y, backwards is positive Y )) This clearly needs more thought put into it. f=ma, but m is not really clear yet -- only size is clear, but size is the sqrt of m if size is the sqrt of the giant square programmatic object that is the ship. Fudging it for now, but value can be added by expanding this later!
-        ## Also note that, as above, the center x and y for this rotation are 0 because we're rotating a velocity value, not a positional value. --v
 
-        if SHOTS_INHERIT_VELOCITY == True:
+        # Make and append the Shot object:
+        new_shot_object = Shot(shot_start_location_x,
+                               shot_start_location_y,
+                               shot_velocity_seed_x,
+                               shot_velocity_seed_y,
+                               0,
+                               self.current_angle_in_degrees,
+                               is_owned_by_player=self.is_owned_by_player,
+                               is_shot_object=True,
+                               programmatic_object_shape=-1,
+                               size=4,
+                               duration_remaining=26)
+        shot_objects_array.append(new_shot_object)
+
+        # Repulsion effect on the ship.
+        # Note that, as seen above, the center x and y
+        # for this rotation are 0 because we're rotating
+        # a velocity value, not a positional value.
+        if SHOTS_INHERIT_VELOCITY is True:
             self.adjust_all_velocities(0, 0.1, 0)
         else:
             self.adjust_all_velocities(0, 0.2, 0)
-        
-        
+
     def spawn_player_ship_debris_cloud(self, supplied_x_velocity=None, supplied_y_velocity=None, supplied_angular_velocity=None):    
         
         ''' Spawns FOUR debris objects of equal length at the player's ship's center's location that persist for a few seconds while twirling about in space and then disappear. Duration slightly randomized; longest must be < 2 seconds, shortest >0.5 seconds. '''
@@ -728,7 +743,7 @@ class PlayerShip(GameObject):
     
         for each in range(0, 4):
             
-            random_duration_remaining = random.randint(24, 36)
+            random_duration = random.randint(24, 36)
             
             
             ## Generate a velocity pair in a random direction with speed 10:
@@ -754,7 +769,7 @@ class PlayerShip(GameObject):
             random_angular_velocity = (random_angular_velocity_seed - 10)
             
             
-            new_player_ship_debris_object = Debris(self.x, self.y, random_x_velocity_result, random_y_velocity_result, random_angular_velocity, current_angle_in_degrees=random_angle, size=self.size, programmatic_object_shape=-3, is_debris_object=True, duration_remaining=random_duration_remaining)
+            new_player_ship_debris_object = Debris(self.x, self.y, random_x_velocity_result, random_y_velocity_result, random_angular_velocity, current_angle_in_degrees=random_angle, size=self.size, programmatic_object_shape=-3, is_debris_object=True, duration_remaining=random_duration)
             
             debris_objects_array.append(new_player_ship_debris_object)
     
@@ -782,11 +797,10 @@ class AlienShip(GameObject):
             
             random_x_velocity_result, random_y_velocity_result = rotate_these_points_around_that_point(0, -10, 0, 0, random_angle)
             
-            random_duration_remaining = random.randint(4, 12)
-            #random_duration_remaining = 5     #   ((random_duration_remaining_seed * 1.5) + 0.5)
+            random_duration = random.randint(4, 12)
             
             
-            new_debris_object = Debris(self.x, self.y, random_x_velocity_result, random_y_velocity_result, 0, size=4, programmatic_object_shape=-1, is_debris_object=True, duration_remaining=random_duration_remaining)
+            new_debris_object = Debris(self.x, self.y, random_x_velocity_result, random_y_velocity_result, 0, size=4, programmatic_object_shape=-1, is_debris_object=True, duration_remaining=random_duration)
             
             debris_objects_array.append(new_debris_object)    
     
@@ -1458,11 +1472,11 @@ def handle_keys():
                     if (are_we_using_player_ammo_this_game == True):
                         if (player_ammo >= 1):
                             for each in player_ship_objects_array:
-                                each.firin_mah_lazor()
+                                each.fire_particle_cannon()
                                 player_ammo -= 1
                     else:
                         for each in player_ship_objects_array:
-                            each.firin_mah_lazor()
+                            each.fire_particle_cannon()
                         
                     player_fired_shot = True
             
