@@ -735,44 +735,71 @@ class PlayerShip(GameObject):
         else:
             self.adjust_all_velocities(0, 0.2, 0)
 
-    def spawn_player_ship_debris_cloud(self, supplied_x_velocity=None, supplied_y_velocity=None, supplied_angular_velocity=None):    
-        
-        ''' Spawns FOUR debris objects of equal length at the player's ship's center's location that persist for a few seconds while twirling about in space and then disappear. Duration slightly randomized; longest must be < 2 seconds, shortest >0.5 seconds. '''
-    
-        ## Note that the supplied_foo_velocities... They're in case someone decides they'd prefer the debris to inherit some of the colliding object's velocities. Be aware that was not in the original Asteroids!.
-    
+    def spawn_player_ship_debris_cloud(self,
+                                       supplied_x_velocity=None,
+                                       supplied_y_velocity=None,
+                                       supplied_angular_velocity=None):
+        '''
+        Spawn four debris objects of equal length at
+        the player's ship's center's location that persist
+        for a few seconds while twirling about in space
+        and then disappear. Duration slightly randomized;
+        longest must be <2 seconds, shortest >0.5 seconds.
+        '''
+
         for each in range(0, 4):
-            
             random_duration = random.randint(24, 36)
-            
-            
-            ## Generate a velocity pair in a random direction with speed 10:
+            # Generate a velocity pair in a random direction with speed 10:
             random_angle = random.randint(0, 359)
-            random_x_velocity_seed, random_y_velocity_seed = rotate_these_points_around_that_point(0, -10, 0, 0, random_angle)
-            
-            
-            ## Take the hypotenuse of the ship's velocity at impact:
-            hypotenuse_of_current_velocity = math.sqrt((self.x_velocity * self.x_velocity) + (self.y_velocity * self.y_velocity))
-            ## Take the hypotenuse of the randomly generated velocities:
-            hypotenuse_of_random_velocities = math.sqrt((random_x_velocity_seed * random_x_velocity_seed) + (random_y_velocity_seed * random_y_velocity_seed))
-            ## Find the ratio of the two, so as to figure out how much to multiply the randomly generated velocites by to conserve ship speed (while randomizing direction of the debris):
-            ## Note: the + 3 is to give it a minimum velocity so they don't just spin in place if the player ship is destroyed while standing still...
-            ## ... and the / 3 is to keep the debris from flying too fast compared to the original Asteroids!.
-            ratio_of_hypotenuse_of_current_velocity_to_hypotenuse_of_random_velocities = (((hypotenuse_of_current_velocity + 3) / 3) / hypotenuse_of_random_velocities)
-            
-            ## Multiply both randomly generated velocities by that --^ ratio to get the properly scaled end result:
-            random_x_velocity_result = (random_x_velocity_seed * ratio_of_hypotenuse_of_current_velocity_to_hypotenuse_of_random_velocities)
-            random_y_velocity_result = (random_y_velocity_seed * ratio_of_hypotenuse_of_current_velocity_to_hypotenuse_of_random_velocities)
-            
-            
+            random_x_velocity_seed, random_y_velocity_seed \
+                = rotate_these_points_around_that_point(0, -10, 0, 0,
+                                                        random_angle)
+            # Take the hypotenuse of the ship's velocity at impact:
+            hypotenuse_of_current_velocities = math.sqrt(
+                (self.x_velocity * self.x_velocity)
+                + (self.y_velocity * self.y_velocity))
+            # Take the hypotenuse of the randomly generated velocities:
+            hypotenuse_of_random_velocities = math.sqrt(
+                (random_x_velocity_seed * random_x_velocity_seed)
+                + (random_y_velocity_seed * random_y_velocity_seed))
+            # Find the ratio of the two, so as to figure out how much
+            # to multiply the randomly generated velocites by to maintain
+            # ship speed in the debris objects while also randomizing
+            # direction of the debris. Reason being, fast-flying ships'
+            # debris don't lose that momentum in the real world.
+            # Note: the + 3 is to give it a minimum velocity so they
+            # don't just spin in place if the player ship is
+            # destroyed while standing still... and the / 3 is
+            # to keep the debris from flying too fast compared
+            # to the original Asteroids!.
+            ratio_of_current_velocities_to_random_velocities \
+                = (((hypotenuse_of_current_velocities + 3) / 3)
+                   / hypotenuse_of_random_velocities)
+            # Multiply both randomly generated velocities by
+            # the current:random velocities ratio
+            # to get the properly scaled end result:
+            random_x_velocity_result \
+                = (random_x_velocity_seed
+                   * ratio_of_current_velocities_to_random_velocities)
+            random_y_velocity_result \
+                = (random_y_velocity_seed
+                   * ratio_of_current_velocities_to_random_velocities)
             random_angular_velocity_seed = random.randint(0, 20)
             random_angular_velocity = (random_angular_velocity_seed - 10)
-            
-            
-            new_player_ship_debris_object = Debris(self.x, self.y, random_x_velocity_result, random_y_velocity_result, random_angular_velocity, current_angle_in_degrees=random_angle, size=self.size, programmatic_object_shape=-3, is_debris_object=True, duration_remaining=random_duration)
-            
+
+            # This is probably a bad sign. I'm going to refactor it after
+            # I do some research about best practices against excessive
+            # parameters in constructor calls.
+            new_player_ship_debris_object = Debris(self.x, self.y,
+                                                   random_x_velocity_result,
+                                                   random_y_velocity_result,
+                                                   random_angular_velocity,
+                                                   current_angle_in_degrees=random_angle,
+                                                   size=self.size,
+                                                   programmatic_object_shape=-3,
+                                                   is_debris_object=True,
+                                                   duration_remaining=random_duration)
             debris_objects_array.append(new_player_ship_debris_object)
-    
 
 class AlienShip(GameObject):    
     ''' Create an alien ship that sometimes changes its velocity and shoots both randomly and at the player. '''
