@@ -4,46 +4,68 @@ import math
 import random
 
 
-print("\n\n#### INSTRUCTIONS FOR USE ####")
+print("\n\n# # # # # INSTRUCTIONS FOR USE # # # # #")
 
-print("## This was made to facilitate development of my Asteroids! clone's programmatically-defined art assets.")
-print("## You can use it by left clicking once inside the green square on the screen that pops up to start drawing a line, then left clicking again somewhere else to finish drawing it.")
-print("## I'm pretty sure the green square is the extent of the object's hitbox in-game, and you can actually draw outside it too. Probably.")
-print("## KEY COMMANDS:")
-print("## - s saves your design and quits the program")
-print("## - r cancels the current line")
-print("## - g will remove a line you've just drawn")
-print("## - q has the same function as left clicking")
-print("## - esc quits without saving")
-print("## The design will be written to a text file in the same directory as this program.")
-print("## In order to incorporate your design into the Asteroids! game, simply copy and paste the contents of the file over the similarly-formatted data inside the game's draw_programmatic_object() function.")
-print("## Or comment out the appropriate line and simply put this beneath it.")
+print("This was made to facilitate development of my\n"
+      "Asteroids! clone's programmatically-defined\n"
+      "art assets.")
+print("You can use it by left clicking once inside\n"
+      "the green square on the screen that pops up\n"
+      "to start drawing a line, then left clicking\n"
+      "again somewhere else to finish drawing it.")
+print("The green square is the extent of the object's\n"
+      "hitbox in-game, and you can actually draw\n"
+      "outside it, too.")
+print("\nWhen saved, the design will be written\n"
+      "to a text file in the same directory as\n"
+      "this program with a name indicative of\n"
+      "the number of lines used.")
+print("In order to incorporate your design into the\n"
+      "Asteroids! game, simply copy and paste the\n"
+      "contents of the file over the similarly-formatted\n"
+      "data inside the game's draw_programmatic_object()\n"
+      "function, or comment out the appropriate line\n"
+      "and simply paste this beneath it.")
+
+print("\nKEY COMMANDS:")
+print(" -- s saves your design and quits the program")
+print(" -- r cancels the current line")
+print(" -- g will remove a line you've just drawn")
+print(" -- q has the same function as left clicking")
+print(" -- esc quits without saving")
 
 
-
-
-#### Goal statement ####
+# # # # Goal statement # # # #
 
 # When the user clicks, a point is added to points_array.
-# If the user has clicked, a line is draw from the first point in points_array to the cursor.
-# If len(points_array) > 1, lines are drawn between the most recently added point and the next most recently added point. ((edit: start and finish each line separately now))
+# If the user has clicked, a line is draw from the first point in
+# points_array to the cursor.
+# If len(points_array) > 1, lines are drawn between the most recently
+# added point and the next most recently added point.
+# ((edit: start and finish each line separately now))
 # ...
-# When the user hits the Save key, points_array will be exported to a file for use in other programs as a programmatically drawn object.
+# When the user hits the Save key, points_array will be exported to
+# a file for use in other programs as a programmatically drawn object.
 
 
-#### Notes for future improvement ####
+# # # # Notes for future improvement # # # #
 
-# I think this program might be using the wrong kind of event/keypress monitoring. See http://www.pygame.org/docs/tut/newbieguide.html for details, specifically the event subsystem section.
+# I think this program might be using the wrong kind of event/keypress
+# monitoring. See http://www.pygame.org/docs/tut/newbieguide.html
+# for details, specifically the event subsystem section.
 
-## Update: This problem has something to do with why I put in user_recently_clicked and tied it to the game clock via a ticker variable.
-## As a result of that there's a touch of unresponsiveness if you're drawing very quickly. This is to prevent unwanted oversensitivity.
-## The way the program is handling clicks makes it too likely to interpret what the user thought was a single click as multiple clicks in succession.
-## The solution was to put duct tape over it and be overjoyed that the result actually worked.
-## I am told this constitutes valuable work experience.
+# Update: This problem has something to do with why I put in
+# user_recently_clicked and tied it to the game clock via a ticker variable.
+# As a result of that there's a touch of unresponsiveness if you're
+# drawing very quickly. This is to prevent unwanted oversensitivity.
+# The way the program is handling clicks makes it too likely to interpret
+# what the user thought was a single click as multiple clicks in succession.
+# The solution was to put duct tape over it and be overjoyed that the
+# result actually worked.
+# I am told this constitutes valuable work experience.
 
 
-
-#### Constants ####
+# # # # Constants # # # #
 
 SCREEN_SIZE = SCREEN_WIDTH, SCREEN_HEIGHT = 300, 300
 BLACK = [0, 0, 0]
@@ -52,26 +74,27 @@ GREEN = [0, 255, 0]
 SCREEN_CENTER_X, SCREEN_CENTER_Y = (SCREEN_WIDTH / 2), (SCREEN_HEIGHT / 2)
 
 
-#### Functions ####
-
-
+# # # # Functions # # # #
 
 def add_previous_point_and_current_point_to_lines_array_as_a_line():
-    
-    
+    # Todo: Parameterize state
     global user_is_currently_adding_a_line
 
-    lines_array.append([[previous_point[0], previous_point[1]], [cursor_position[0], cursor_position[1]]])
+    lines_array.append([[previous_point[0], previous_point[1]],
+                        [cursor_position[0], cursor_position[1]]])
     user_is_currently_adding_a_line = False
-    
-    
-
 
 
 def add_point_to_points_array():
-    ''' Places the x, y values of the cursor's current position into points_array. '''
-    
-    ## This fails at [0, 0], but fixing that opens up another unknown. What placeholder value should the array be initialized with that the user could never click... that itself wouldn't change some hidden property of the array? Negative numbers? Strings??
+    '''
+    Places the x, y values of the cursor's current position into points_array.
+    '''
+
+    # This fails at [0, 0], but fixing that opens up another unknown.
+    # What placeholder value should the array be initialized with that
+    # the user could never click... that itself wouldn't change some
+    # hidden property of the array? Negative numbers? Strings??
+    # Edit: Refactor to "None" when I do the second pass
     if points_array[0] == [0, 0]:
         points_array[0][0] = cursor_position[0]
         points_array[0][1] = cursor_position[1]
@@ -79,127 +102,139 @@ def add_point_to_points_array():
         points_array.append([cursor_position[0], cursor_position[1]])
 
 
-def write_something_to_a_text_file(supplied_filename, supplied_string_to_write):
-    ''' Writes a supplied string to a text file with a supplied name. '''
+def write_something_to_a_text_file(filename, string_to_write):
+    '''
+    Write a supplied string to a text file with the supplied name.
+    Generate such a file if none exists.
+    '''
 
-    text_file = open(supplied_filename, "w")
+    # Edit: Refactor this whole function to a context manager.
+    # Jeez, the things I didn't know...
 
-    text_file.write(supplied_string_to_write)
-
+    text_file = open(filename, "w")
+    text_file.write(string_to_write)
     text_file.close()
 
 
-        
 def render_all():
-    ''' Draw all lines in points_array on the screen. Also draws the tentative next line connecting the last placed point to the cursor, if the user is currently drawing, and draws UI elements. '''
-    
+    '''
+    Draw all lines in points_array on the screen.
+    Also draw the tentative next line connecting the last placed point
+    to the cursor, if the user is currently drawing, and draws UI elements.
+    '''
+
     screen.fill(BLACK)
-    
-    
+
     if len(points_array) > 1:
         for each_line_index_number in range(1, (len(points_array))):
-            ## debugging:
-            #print("\neach_line_index_number == " + str(each_line_index_number))
-            
-            ## Draw each line. Index numbers are taken from the range in the for loop above.
             pygame.draw.line(screen, WHITE, [points_array[(each_line_index_number - 1)][0], points_array[(each_line_index_number - 1)][1]], [points_array[(each_line_index_number)][0], points_array[(each_line_index_number)][1]], 1)
-    
+
     if len(lines_array) >= 1:
         for each_line in range(0, (len(lines_array))):
             pygame.draw.line(screen, WHITE, [lines_array[each_line][0][0], lines_array[each_line][0][1]], [lines_array[each_line][1][0], lines_array[each_line][1][1]], 1)
-    
-    
-    if user_is_drawing == True:
-        ## If the user is currently drawing, connect their cursor to the last placed point.
+
+    if user_is_drawing is True:
+        # If the user is currently drawing,
+        # connect their cursor to the last placed point.
         if len(points_array) > 1:
             pygame.draw.line(screen, WHITE, [previous_point[0][0], previous_point[0][1]], [cursor_position[0], cursor_position[1]], 1)
         elif len(lines_array) >= 0:
             pygame.draw.line(screen, WHITE, [previous_point[0], previous_point[1]], [cursor_position[0], cursor_position[1]], 1)
-        
-    ## Draws a tiny green dot in the center of the screen. NOT included in the saved programmatic object file; this is for measuring purposes only.
-    pygame.draw.rect(screen, GREEN, [(SCREEN_CENTER_X - 1), (SCREEN_CENTER_Y - 1), 2, 2])    
-    ## Draws a rectangle around the center 200x200 pixels for measuring purposes. Doing it this way because I want it to be here at the end, drawn on top of user inputted things, alongside the center dot.
+
+    # Draws a tiny green dot in the center of the screen.
+    # This dot is NOT included in the saved programmatic object file.
+    # This is for measuring purposes only.
+    pygame.draw.rect(screen, GREEN, [(SCREEN_CENTER_X - 1), (SCREEN_CENTER_Y - 1), 2, 2])
+    # Draws a rectangle around the center 200x200 pixels
+    # for measuring purposes.
+    # Doing it this way because I want it to be here at the end,
+    # drawn on top of user inputted things, alongside the center dot.
     pygame.draw.line(screen, GREEN, [(SCREEN_CENTER_X - 100), (SCREEN_CENTER_Y - 100)], [(SCREEN_CENTER_X + 100), (SCREEN_CENTER_Y - 100)], 1)    
     pygame.draw.line(screen, GREEN, [(SCREEN_CENTER_X + 100), (SCREEN_CENTER_Y - 100)], [(SCREEN_CENTER_X + 100), (SCREEN_CENTER_Y + 100)], 1)
     pygame.draw.line(screen, GREEN, [(SCREEN_CENTER_X + 100), (SCREEN_CENTER_Y + 100)], [(SCREEN_CENTER_X - 100), (SCREEN_CENTER_Y + 100)], 1)
     pygame.draw.line(screen, GREEN, [(SCREEN_CENTER_X - 100), (SCREEN_CENTER_Y + 100)], [(SCREEN_CENTER_X - 100), (SCREEN_CENTER_Y - 100)], 1)
-    
-        
+
     pygame.display.flip()
-    
-    
+
+
 def handle_keys():
-    ''' Interpret pressed keys as input commands. '''
-    
+    '''
+    Interpret pressed keys as input commands
+    and execute them, mostly via state changes.
+    '''
+
+    # Ow. More refactoring to do later.
+    # Maybe a GameState singleton?
+    # Or is the better design pattern something involving
+    # multiple GameState-esque subdivision classes?
+    # At the very least it should accept and hand off parameters,
+    # perhaps in a simple dict (basically just a singleton then)
     global previous_point
     global keep_window_open
     global user_is_drawing
     global user_is_currently_adding_a_line
     global lines_array
-    
-    for event in pygame.event.get():   # NOTE: This does not seem to allow for continuously-held-down keys being re-read if another key is pressed and released during the first key's held period.
+
+    for event in pygame.event.get():   # NOTE: This does not seem to allow for continuously-held keys being re-read if another key is pressed and released during the first key's held period.
         if event.type == pygame.QUIT:
             sys.exit
         elif event.type == pygame.KEYDOWN:
-            ## events and KEYDOWN prevent multiple firings from holding down buttan.
-            
-            if event.key == pygame.K_ESCAPE:
-                sys.exit
-                pygame.quit
-                keep_window_open = False ## NOTE: Only this line ACTUALLY works!
-                # END PROGRAM DOT YES REALLY.
-            
-            
+            # events and KEYDOWN prevent multiple firings from holding down the button.
 
-            ## Note: Previous program functionality has been disabled. Point-pair lines only now.
+            if event.key == pygame.K_ESCAPE:
+                keep_window_open = False
+
+
+
+            # Note: Previous program functionality has been disabled. Point-pair lines only now.
             #if event.key == pygame.K_q:
-            #    ## Then the user is placing a point at the cursor's position.
+            #    # Then the user is placing a point at the cursor's position.
             #    user_is_drawing = True
             #    add_point_to_points_array()
             #    previous_point = [cursor_position]
                 
             if event.key == pygame.K_r:
-                ## Cancels drawing mode.
+                # Cancels drawing mode.
                 user_is_currently_adding_a_line = False
                 user_is_drawing = False
                 previous_point = [0, 0]
                 
             if event.key == pygame.K_q:
-                ## Then the user is beginning or ending a line.
-                if user_is_currently_adding_a_line == True:
-                    ## Ending a line
+                # Then the user is beginning or ending a line.
+                if user_is_currently_adding_a_line is True:
+                    # Ending a line
                     add_previous_point_and_current_point_to_lines_array_as_a_line()
                     previous_point = [0, 0]
-                    ## Note: The next line is also checked in add_..._a_line() function. Redundancy. Also safety!
+                    # Note: The next line is also checked in add_..._a_line() function. Redundancy. Also safety!
                     user_is_currently_adding_a_line = False
                     user_is_drawing = False
                 else:
-                    ## Beginning a line
+                    # Beginning a line
                     user_is_currently_adding_a_line = True
                     user_is_drawing = True
                     previous_point[0] = cursor_position[0]
                     previous_point[1] = cursor_position[1]
                     
             if event.key == pygame.K_g:
-                ## Then the user is removing the last completed line.
+                # Then the user is removing the last completed line.
                 if len(lines_array) > 0:
                     lines_array.pop()
                 
                 
             if event.key == pygame.K_s:
-                ## Then the user is saving the array to a file.
+                # Then the user is saving the array to a file.
                 random_code = random.randint(0, 1000000)
                 generated_filename = str(len(lines_array)) + '-line programmatic object -- randcode ' + str(random_code) + '.txt'
                 
                 if len(lines_array) >= 1:
                     for each_line_index in range(0, (len(lines_array))):
                         
-                        ## IMPORTANT! This is is only for the scaling system used in my Asteroids! test game.
-                        ## Please consider changing this if you're using it in the future; it's better not to divide them at all and use pixels as the yardstick, I'd guess.
-                        ## But maybe not?! There might be something to be said for having an independent scale.
-                        ## Note that the Asteroids! test game uses (object_size / 20) and here dividing the numbers by 10 as seen will fit them to that (foo / 20) metric.
-                        ## Imagine a grid, 20x20, with scaling from -10 to +10 on both axes...
-                        ## That system is conceptually useful when centerpoints are important for things like radius-based collision detection.
+                        # IMPORTANT! This is is only for the scaling system used in my Asteroids! test game.
+                        # Please consider changing this if you're using it in the future; it's better not to divide them at all and use pixels as the yardstick, I'd guess.
+                        # But maybe not?! There might be something to be said for having an independent scale.
+                        # Note that the Asteroids! test game uses (object_size / 20) and here dividing the numbers by 10 as seen will fit them to that (foo / 20) metric.
+                        # Imagine a grid, 20x20, with scaling from -10 to +10 on both axes...
+                        # That system is conceptually useful when centerpoints are important for things like radius-based collision detection.
                         
                         # start X    
                         lines_array[each_line_index][0][0] = ((SCREEN_CENTER_X - lines_array[each_line_index][0][0]) / 10)
@@ -211,12 +246,12 @@ def handle_keys():
                         lines_array[each_line_index][1][1] = ((SCREEN_CENTER_Y - lines_array[each_line_index][1][1]) / 10)
                 
                 
-                    ## If the end point of one line are close to the start point of the next, this code splits the difference. Note this assumes you care about exactly matching endpoints.
+                    # If the end point of one line are close to the start point of the next, this code splits the difference. Note this assumes you care about exactly matching endpoints.
                     
                     for each_line_index in range(0, (len(lines_array))):
                     
                     
-                        ## Special case of the first and last points:
+                        # Special case of the first and last points:
                         if each_line_index == 0:
                             start_x_of_current_line = lines_array[each_line_index][0][0]
                             end_x_of_previous_line = lines_array[(len(lines_array) - 1)][1][0]
@@ -233,38 +268,38 @@ def handle_keys():
                         
                         
                         
-                        ## X
+                        # X
                         if ( (abs(start_x_of_current_line - end_x_of_previous_line)) <= 0.4 ):
-                            ## If abs(difference between the end points) <= 0.4, split the difference and set it to that.
+                            # If abs(difference between the end points) <= 0.4, split the difference and set it to that.
                             difference_between_them = (abs(start_x_of_current_line - end_x_of_previous_line))
                             half_of_the_difference = (difference_between_them / 2)
                             
                             start_x_of_current_line += half_of_the_difference
                             end_x_of_previous_line -= half_of_the_difference
                                     
-                            ## Round to the nearest tenth
+                            # Round to the nearest tenth
                             start_x_of_current_line *= 10
                             start_x_of_current_line = start_x_of_current_line // 10
                             end_x_of_previous_line *= 10
                             end_x_of_previous_line = end_x_of_previous_line // 10
                                     
-                        ## Y
+                        # Y
                         
                         if ( (abs(start_y_of_current_line - end_y_of_previous_line)) <= 0.4 ):
-                            ## If abs(difference between the end points) <= 0.4, split the difference and set it to that.
+                            # If abs(difference between the end points) <= 0.4, split the difference and set it to that.
                             difference_between_them = (abs(start_y_of_current_line - end_y_of_previous_line))
                             half_of_the_difference = (difference_between_them / 2)
                             
                             start_y_of_current_line += half_of_the_difference
                             end_y_of_previous_line -= half_of_the_difference
                             
-                            ## Round to the nearest tenth
+                            # Round to the nearest tenth
                             start_y_of_current_line *= 10
                             start_y_of_current_line = start_y_of_current_line // 10
                             end_y_of_previous_line *= 10
                             end_y_of_previous_line = end_y_of_previous_line // 10    
                             
-                        ## This part actually does the setting. I feel like some kind of list comprehension would have helped with the index numbers. To-do list: Learn everything about list comprehensions.        
+                        # This part actually does the setting. I feel like some kind of list comprehension would have helped with the index numbers. To-do list: Learn everything about list comprehensions.
                         if each_line_index == 0:
                             lines_array[each_line_index][0][0] = start_x_of_current_line
                             lines_array[(len(lines_array) - 1)][1][0] = end_x_of_previous_line
@@ -289,7 +324,7 @@ def handle_keys():
                 keep_window_open = False
                 
                 
-#### Initializations ####
+# # # # Initializations # # # #
 
 
 screen = pygame.display.set_mode(SCREEN_SIZE)
@@ -306,32 +341,32 @@ lines_array = []
 
 previous_point = [0, 0]
 
-## To keep the game running
+# To keep the game running
 keep_window_open = True
 
-## Create a clock object to make the game run at a specified speed in the main loop
+# Create a clock object to make the game run at a specified speed in the main loop
 clock = pygame.time.Clock()
 
-## Using the game_ticker model is currently necessary to decouple program running speed from pygame's Clock function. There's probably a better way to do this somewhere... This is fairly simple, though.
+# Using the game_ticker model is currently necessary to decouple program running speed from pygame's Clock function. There's probably a better way to do this somewhere... This is fairly simple, though.
 game_ticker = 0
 
-#### Main Loop ####
+# # # # Main Loop # # # #
 
 
-while keep_window_open == True:
+while keep_window_open is True:
 
     cursor_position = cursor_x, cursor_y = pygame.mouse.get_pos()
 
     button1_pressed, button2_pressed, button3_pressed = pygame.mouse.get_pressed()
     
     
-    ## Process keyboard input
+    # Process keyboard input
     handle_keys()
     
     
 
             
-    ## Event progression metering
+    # Event progression metering
     clock.tick(40)
     
     if game_ticker < 80:
@@ -340,29 +375,29 @@ while keep_window_open == True:
         game_ticker = 0
     
     
-    ## Note: Previous program functionality has been disabled. Point-pair lines only now.
-    #if button1_pressed == True:
-    #    ## Left mouse click enables drawing mode and places a point in points_array.
+    # Note: Previous program functionality has been disabled. Point-pair lines only now.
+    #if button1_pressed is True:
+    #    # Left mouse click enables drawing mode and places a point in points_array.
     #    user_is_drawing = True
     #    add_point_to_points_array()
     #    previous_point = [cursor_position]
     
-    if ( (user_recently_clicked == True) and ((game_ticker % 30) == 1) ):
+    if ( (user_recently_clicked is True) and ((game_ticker % 30) == 1) ):
         user_recently_clicked = False
         
     if ((game_ticker % 1) == 0):    
         
-        if ((button1_pressed == True) and (user_recently_clicked == False)):    
-            if user_is_currently_adding_a_line == True:
-                ## Ending a line
+        if ((button1_pressed is True) and (user_recently_clicked is False)):
+            if user_is_currently_adding_a_line is True:
+                # Ending a line
                 add_previous_point_and_current_point_to_lines_array_as_a_line()
                 previous_point = [0, 0]
-                ## Note: The next line is also checked in add_..._a_line() function. Redundancy. Also safety!
+                # Note: The next line is also checked in add_..._a_line() function. Redundancy. Also safety!
                 user_is_currently_adding_a_line = False
                 user_is_drawing = False
                 user_recently_clicked = True
             else:
-                ## Beginning a line
+                # Beginning a line
                 user_is_currently_adding_a_line = True
                 user_is_drawing = True
                 previous_point[0] = cursor_position[0]
@@ -372,15 +407,15 @@ while keep_window_open == True:
             
             
             
-        if button3_pressed == True:
-            ## Right mouse click cancels drawing mode.
+        if button3_pressed is True:
+            # Right mouse click cancels drawing mode.
             user_is_currently_adding_a_line = False
             user_is_drawing = False
             previous_point = [0, 0]
         
-        ## Debugging section ---v
+        # Debugging section ---v
         
-        ## Note: Previous program functionality has been disabled. Point-pair lines only now.
+        # Note: Previous program functionality has been disabled. Point-pair lines only now.
         #print("\npoints_array == " + str(points_array))
         #print("\nprevious_point == " + str(previous_point))
         
@@ -389,7 +424,7 @@ while keep_window_open == True:
         # print("\nprevious_point == " + str(previous_point))
         
     
-    ## Display everything that needs to be displayed
+    # Display everything that needs to be displayed
     render_all()
 
 # "Be IDLE friendly," they said.    
