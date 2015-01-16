@@ -172,7 +172,9 @@ class GameObject:
            or (self.is_shot_object is True)
            or (self.is_alien_ship is True)):
 
-            # If GameObject is not owned by the player or is a shot object, it should bounce off the edges of the map, rather than the screen (or it should be destroyed, for shots).
+            # If GameObject is not owned by the player or is a Shot object,
+            # it should bounce off the edges of the map, rather than
+            # the screen (or it should be destroyed, for Shot).
             if ((self.x - self.radius) < MAP_X):
                 if self.is_asteroid is True:
                     if self in asteroid_objects_array:
@@ -187,7 +189,7 @@ class GameObject:
                     if self in alien_ship_objects_array:
                         alien_ship_objects_array.remove(self)
                 else:
-                    print("Error! Object out of bounds and undeclared")
+                    raise Exception("Error! Object out of bounds")
 
             if ((self.x + self.radius) > MAP_X2):
                 if self.is_asteroid is True:
@@ -203,7 +205,7 @@ class GameObject:
                     if self in alien_ship_objects_array:
                         alien_ship_objects_array.remove(self)
                 else:
-                    print("Error! Object out of bounds and undeclared")
+                    raise Exception("Error! Object out of bounds")
 
             if ((self.y - self.radius) < MAP_Y):
                 if self.is_asteroid is True:
@@ -801,37 +803,55 @@ class PlayerShip(GameObject):
                                                    duration_remaining=random_duration)
             debris_objects_array.append(new_player_ship_debris_object)
 
-class AlienShip(GameObject):    
-    ''' Create an alien ship that sometimes changes its velocity and shoots both randomly and at the player. '''
-    
-    def __init__(self, starting_x, starting_y, x_velocity, y_velocity, angular_velocity, current_angle_in_degrees=0, size=1, color=WHITE, programmatic_object_shape=-4, is_asteroid=False, is_owned_by_player=False, is_shot_object=False, is_alien_ship=True, is_debris_object=False, duration_remaining=None, specific_max_velocity=5):
-        
-        GameObject.__init__(self, starting_x, starting_y, x_velocity, y_velocity, angular_velocity, current_angle_in_degrees, size, color, programmatic_object_shape, is_asteroid, is_owned_by_player, is_shot_object, is_alien_ship, is_debris_object, duration_remaining, specific_max_velocity)
-        
-        
-        self.pixellus_cannon_recharge_ticker = 0
-        
-    
-    def spawn_debris_cloud(self):
-        ''' Delete the AlienShip and spawn a debris cloud at its location. '''
-        
-        number_of_new_debris_objects_to_be_created = random.randint(3, 8)
-        
-        for each in range(0, number_of_new_debris_objects_to_be_created):
-            ## Generate a vector in a random direction at precisely 10 speed.
 
+class AlienShip(GameObject):
+    '''
+    Create an alien ship that sometimes changes its velocity
+    and shoots both randomly and at the player's ship.
+    '''
+
+    def __init__(self, starting_x, starting_y,
+                 x_velocity, y_velocity,
+                 angular_velocity,
+                 current_angle_in_degrees=0,
+                 size=1, color=WHITE, programmatic_object_shape=-4,
+                 is_asteroid=False, is_owned_by_player=False,
+                 is_shot_object=False, is_alien_ship=True,
+                 is_debris_object=False, duration_remaining=None,
+                 specific_max_velocity=5):
+        GameObject.__init__(self,
+                            starting_x, starting_y,
+                            x_velocity, y_velocity,
+                            angular_velocity, current_angle_in_degrees,
+                            size, color, programmatic_object_shape,
+                            is_asteroid, is_owned_by_player,
+                            is_shot_object, is_alien_ship,
+                            is_debris_object, duration_remaining,
+                            specific_max_velocity)
+        self.pixellus_cannon_recharge_ticker = 0
+
+    def spawn_debris_cloud(self):
+        '''
+        Delete the AlienShip and spawn a cloud
+        of Debris objects at its location.
+        '''
+
+        number_of_new_debris_objects_to_be_created = random.randint(3, 8)
+        for each in range(0, number_of_new_debris_objects_to_be_created):
+            # Generate a vector in a random direction at precisely 10 speed.
             random_angle = random.randint(0, 359)
-            
-            random_x_velocity_result, random_y_velocity_result = rotate_these_points_around_that_point(0, -10, 0, 0, random_angle)
-            
+            random_x_velocity_result, random_y_velocity_result \
+                = rotate_these_points_around_that_point(0, -10, 0, 0,
+                                                        random_angle)
             random_duration = random.randint(4, 12)
-            
-            
-            new_debris_object = Debris(self.x, self.y, random_x_velocity_result, random_y_velocity_result, 0, size=4, programmatic_object_shape=-1, is_debris_object=True, duration_remaining=random_duration)
-            
-            debris_objects_array.append(new_debris_object)    
-    
-    
+            new_debris_object \
+                = Debris(self.x, self.y,
+                         random_x_velocity_result, random_y_velocity_result,
+                         0, size=4, programmatic_object_shape=-1,
+                         is_debris_object=True,
+                         duration_remaining=random_duration)
+            debris_objects_array.append(new_debris_object)
+
     def hard_velocity_adjustment(self):
         ''' Sharply change the AlienShip's velocity. '''
         
