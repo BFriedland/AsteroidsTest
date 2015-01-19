@@ -5,14 +5,13 @@ import random
 
 '''
 
-PLEASE NOTE:
+Notes on the state of the code
 
 This game is still being re-factored to conform to the standards of
     PEP8 and basic human decency. It was coded in the land before time,
-    when I had no formal training in software development, and saurian
-    titans walked the earth. As a result it should be considered incomplete
-    and for the purposes of code quality my more recent projects should
-    be examined.
+    when I had no formal training in software development. As a result
+    it should be considered incomplete and for the purposes of code
+    quality my more recent projects should be examined.
 
 Two Django apps with better formatting are my student team projects, Imagr
     (much being my creation) and RPi-Haus (in which I was responsible for
@@ -853,47 +852,65 @@ class AlienShip(GameObject):
             debris_objects_array.append(new_debris_object)
 
     def hard_velocity_adjustment(self):
-        ''' Sharply change the AlienShip's velocity. '''
-        
-        ## I think simplicity is best, given what the Asteroids! Let's Plays showed.
-        
+        '''
+        Sharply change the AlienShip's velocity.
+        '''
+
+        # I think simplicity is best, given what
+        # the Asteroids! Let's Plays showed.
+
         if (len(player_ship_objects_array) > 0):
             for each_player_ship in player_ship_objects_array:
-                
-                x_distance_between_alien_and_player = each_player_ship.x - self.x
-                y_distance_between_alien_and_player = each_player_ship.y - self.y
-                
-                distance_between_them_as_hypotenuse = math.sqrt((x_distance_between_alien_and_player * x_distance_between_alien_and_player) + (y_distance_between_alien_and_player * y_distance_between_alien_and_player))
-                
+
+                x_distance_between_alien_and_player \
+                    = each_player_ship.x - self.x
+                y_distance_between_alien_and_player \
+                    = each_player_ship.y - self.y
+                distance_between_them_as_hypotenuse \
+                    = math.sqrt((x_distance_between_alien_and_player
+                                 * x_distance_between_alien_and_player)
+                                + (y_distance_between_alien_and_player
+                                   * y_distance_between_alien_and_player))
+
                 if distance_between_them_as_hypotenuse <= 150:
-                    ## If near to the player's ship, adjust movement direction randomly.
+                    # If near to the player's ship,
+                    # adjust movement direction randomly.
                     random_angle = random.randint(0, 359)
-        
-                    new_x_velocity, new_y_velocity = rotate_these_points_around_that_point(self.x_velocity, self.y_velocity, 0, 0, random_angle)
-        
+
+                    new_x_velocity, new_y_velocity \
+                        = rotate_these_points_around_that_point(
+                            self.x_velocity, self.y_velocity,
+                            0, 0, random_angle)
+
                     self.x_velocity = new_x_velocity
                     self.y_velocity = new_y_velocity
-                    
+
                 else:
-                    ## If far from the player's ship, adjust movement direction to move towards the player's ship.
-                    
-                    ratio_of_alien_max_velocities_per_hypotenuse = (self.max_velocity / distance_between_them_as_hypotenuse)
-                    
-                    new_alien_ship_x_velocity = (x_distance_between_alien_and_player * ratio_of_alien_max_velocities_per_hypotenuse)
-                    new_alien_ship_y_velocity = (y_distance_between_alien_and_player * ratio_of_alien_max_velocities_per_hypotenuse)
-                    
+                    # If the alien ship is far from the player's ship,
+                    # adjust movement direction to move towards
+                    # the player's ship.
+                    ratio_of_alien_max_velocities_per_hypotenuse \
+                        = (self.max_velocity
+                           / distance_between_them_as_hypotenuse)
+                    new_alien_ship_x_velocity \
+                        = (x_distance_between_alien_and_player
+                           * ratio_of_alien_max_velocities_per_hypotenuse)
+                    new_alien_ship_y_velocity \
+                        = (y_distance_between_alien_and_player
+                           * ratio_of_alien_max_velocities_per_hypotenuse)
                     self.x_velocity = new_alien_ship_x_velocity
                     self.y_velocity = new_alien_ship_y_velocity
+
         else:
-            ## For when the player is not around.
+            # For when the player is not around.
             random_angle = random.randint(0, 359)
-        
-            new_x_velocity, new_y_velocity = rotate_these_points_around_that_point(self.x_velocity, self.y_velocity, 0, 0, random_angle)
-        
+            new_x_velocity, new_y_velocity \
+                = rotate_these_points_around_that_point(self.x_velocity,
+                                                        self.y_velocity,
+                                                        0, 0, random_angle)
             self.x_velocity = new_x_velocity
             self.y_velocity = new_y_velocity
-        
-        
+
     def attempt_to_avoid_an_asteroid(self):
         ''' Scan for nearby asteroids and adjust heading to to avoid them. '''
         
@@ -1499,7 +1516,8 @@ def handle_keys():
         if event.type == pygame.QUIT:
             sys.exit
         elif event.type == pygame.KEYDOWN:
-            ## events and KEYDOWN prevent multiple firings from holding down buttan.
+            # KEYDOWN prevents interpreting holding down
+            # the button as multiple keypresses.
             
             if event.key == pygame.K_ESCAPE:
                 sys.exit
