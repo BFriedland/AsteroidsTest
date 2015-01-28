@@ -912,20 +912,23 @@ class AlienShip(GameObject):
             self.y_velocity = new_y_velocity
 
     def attempt_to_avoid_an_asteroid(self):
-        ''' Scan for nearby asteroids and adjust heading to to avoid them. '''
-        
+        '''
+        Scan for nearby asteroids and adjust heading to to avoid them.
+        '''
+
         if (len(asteroid_objects_array) > 0):
             for each_asteroid in asteroid_objects_array:
                 x_distance_between_alien_and_rock = self.x - each_asteroid.x
                 y_distance_between_alien_and_rock = self.y - each_asteroid.y
-                
-                distance_between_them_as_hypotenuse = math.sqrt((x_distance_between_alien_and_rock * x_distance_between_alien_and_rock) + (y_distance_between_alien_and_rock * y_distance_between_alien_and_rock))
-                
+                distance_between_them_as_hypotenuse \
+                    = math.sqrt((x_distance_between_alien_and_rock
+                                 * x_distance_between_alien_and_rock)
+                                + (y_distance_between_alien_and_rock
+                                   * y_distance_between_alien_and_rock))
                 if distance_between_them_as_hypotenuse <= 50:
                     self.x_velocity *= -1
                     self.y_velocity *= -1
-                
-        
+
     def shoot_at_player_or_random_angle(self, force_random_angle=False, force_player_ship=False):
         ''' Shoot at the player from the AlienShip if in a given distance, or at a random angle if not. May be handed parameters to force one or the other. '''
         
