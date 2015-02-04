@@ -912,20 +912,23 @@ class AlienShip(GameObject):
             self.y_velocity = new_y_velocity
 
     def attempt_to_avoid_an_asteroid(self):
-        ''' Scan for nearby asteroids and adjust heading to to avoid them. '''
-        
+        '''
+        Scan for nearby asteroids and adjust heading to to avoid them.
+        '''
+
         if (len(asteroid_objects_array) > 0):
             for each_asteroid in asteroid_objects_array:
                 x_distance_between_alien_and_rock = self.x - each_asteroid.x
                 y_distance_between_alien_and_rock = self.y - each_asteroid.y
-                
-                distance_between_them_as_hypotenuse = math.sqrt((x_distance_between_alien_and_rock * x_distance_between_alien_and_rock) + (y_distance_between_alien_and_rock * y_distance_between_alien_and_rock))
-                
+                distance_between_them_as_hypotenuse \
+                    = math.sqrt((x_distance_between_alien_and_rock
+                                 * x_distance_between_alien_and_rock)
+                                + (y_distance_between_alien_and_rock
+                                   * y_distance_between_alien_and_rock))
                 if distance_between_them_as_hypotenuse <= 50:
                     self.x_velocity *= -1
                     self.y_velocity *= -1
-                
-        
+
     def shoot_at_player_or_random_angle(self, force_random_angle=False, force_player_ship=False):
         ''' Shoot at the player from the AlienShip if in a given distance, or at a random angle if not. May be handed parameters to force one or the other. '''
         
@@ -1042,64 +1045,75 @@ def spawn_new_player_ship():
     
     
 def randomly_generate_new_alien_ship():
-    ''' Create a new AlienShip object with wholly randomly generated features at the edge of the map. '''
-    
-    ## Generate a random direction for the alien ship to travel in at speed 4.
-    ## Note: The velocity will be inverted if it threatens to head straight off the map after spawning; see below in the placement generator.
-    random_alien_velocity_angle_seed = random.randint(0, 359)
-    random_alien_x_velocity, random_alien_y_velocity = rotate_these_points_around_that_point(0, -5, 0, 0, random_alien_velocity_angle_seed)
-                    
+    '''
+    Create a new AlienShip object with randomly
+    generated features at the edge of the map.
+    '''
+
+    # Generate a random direction for the
+    # alien ship to travel in at speed 4.
+    # Note: The velocity will be inverted if it threatens to head
+    # straight off the map after spawning;
+    # see below in the placement generator.
+    random_velocity_angle = random.randint(0, 359)
+    random_alien_x_velocity, random_alien_y_velocity \
+        = rotate_these_points_around_that_point(0, -5, 0, 0,
+                                                random_velocity_angle)
+
     random_size_selector = random.randint(1, 2)
     if random_size_selector == 1:
         random_alien_size = 40
     elif random_size_selector == 2:
         random_alien_size = 20
-    
-    
-    random_x_and_y = random.randint(1, 4)
-        
-    
-    if random_x_and_y <= 2:
-    ## Then it's on the top or bottom (use Y values of min and max).
-        
-        ## Select the x location:
-        random_starting_x = random.randint(1, (MAP_X2))
-            
-        if random_x_and_y == 1:
-            ## Then it's on the top.
-            random_starting_y = -120
-            ## ... incidentally, -120 should probably be changed to a fraction of map size, proportional to how much bigger the map size is compared to the screen... with a hard minimum bound set at (radius_of_the_largest_spawnable_object + 1).
-                
-        elif random_x_and_y == 2:
-            ## Then it's on the bottom.
-            random_starting_y = (MAP_Y2 - 120)
-            ## Keeps the alien from sliding off the map immediately:
-            random_alien_y_velocity = (random_alien_y_velocity * -1)
-        
-    elif (random_x_and_y > 2):
-        ## Then it's on the left or right (use X values of min and max).
-            
-        ## Select the y location:
-        random_starting_y = random.randint(1, (MAP_Y2))
-                
-        if random_x_and_y == 3:
-                ## Then it's on the left.
-                random_starting_x = -120
-                
-        elif random_x_and_y == 4:
-            ## Then it's on the right.
-            random_starting_x = (MAP_X2 - 120)   
-                
-            ## Keeps the alien from sliding off the map immediately:
-            random_alien_x_velocity = (random_alien_x_velocity * -1)
-            
 
-    ## Oops, everything created by the programmatic object creator application is inverted! I should fix that.    
-    new_alien_ship_object = AlienShip(random_starting_x, random_starting_y, random_alien_x_velocity, random_alien_y_velocity, 0, programmatic_object_shape=-4, is_alien_ship=True, size=random_alien_size)
-    
+    random_x_and_y = random.randint(1, 4)
+    if random_x_and_y <= 2:
+        # Then it's on the top or bottom (use Y values of min and max).
+
+        # Select the x location:
+        random_starting_x = random.randint(1, MAP_X2)
+        if random_x_and_y == 1:
+            # Then it's on the top.
+            random_starting_y = -120
+            # ... incidentally, -120 should probably be changed
+            # to a fraction of map size, proportional to how much
+            # bigger the map size is compared to the screen...
+            # with a hard minimum bound set at
+            # (radius_of_the_largest_spawnable_object + 1).
+            # But this isn't strictly necessary.
+
+        elif random_x_and_y == 2:
+            # Then it's on the bottom.
+            random_starting_y = (MAP_Y2 - 120)
+            # Keep the alien from sliding off the map immediately.
+            # This is only needed if the ship stars on the bottom.
+            random_alien_y_velocity = (random_alien_y_velocity * -1)
+
+    elif (random_x_and_y > 2):
+        # Then it's on the left or right (use X values of min and max).
+        # Select the y location:
+        random_starting_y = random.randint(1, MAP_Y2)
+        if random_x_and_y == 3:
+                # Then it's on the left.
+                random_starting_x = -120
+        elif random_x_and_y == 4:
+            # Then it's on the right.
+            random_starting_x = (MAP_X2 - 120)
+            # Keep the alien from sliding off the map immediately.
+            # This is only needed if the ship stars on the bottom.
+            random_alien_x_velocity = (random_alien_x_velocity * -1)
+
+    new_alien_ship_object = AlienShip(random_starting_x,
+                                      random_starting_y,
+                                      random_alien_x_velocity,
+                                      random_alien_y_velocity,
+                                      0,
+                                      programmatic_object_shape=-4,
+                                      is_alien_ship=True,
+                                      size=random_alien_size)
     alien_ship_objects_array.append(new_alien_ship_object)
 
-    
+
 def create_new_asteroid_object(supplied_starting_x=None, supplied_starting_y=None, supplied_x_velocity=None, supplied_y_velocity=None, supplied_angular_velocity=None, supplied_asteroid_size=None, supplied_asteroid_shape=None):
     ''' Create a new Asteroid object, with wholely or partially randomly generated features, at the edge of the map or at specific coordinates, with specific velocity, shape and size, depending on parameters. '''
     
