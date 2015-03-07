@@ -75,40 +75,65 @@ class GameObject(object):
     GameObjects are capable of movement, display, and routine updating.
     '''
 
-    def __init__(self, starting_x, starting_y, x_velocity, y_velocity,
-                 angular_velocity, current_angle_in_degrees=0, size=1,
-                 color=WHITE, programmatic_object_shape=1, is_asteroid=False,
-                 is_owned_by_player=False, duration_remaining=None,
-                 specific_max_velocity=None):
+    def __init__(self, *args, **kwargs):
 
-        self.starting_x = starting_x
-        self.starting_y = starting_y
+        # Preventing extremely long parameter lists:
+        # Defaults for kwargs taken from a dictionary
+        # rather than being listed in the parameters!
 
-        self.x_velocity = x_velocity
-        self.y_velocity = y_velocity
+        # With thanks to blubb's StackOverflow answer to this question:
+        # https://stackoverflow.com/questions/5899185
+        #     /class-with-too-many-parameters-better-design-strategy
 
-        if specific_max_velocity is not None:
-            self.max_velocity = specific_max_velocity
-        else:
-            self.max_velocity = 4
+        self.initial_parameters = {}
 
-        self.angular_velocity = angular_velocity
-        self.current_angle_in_degrees = current_angle_in_degrees
-        self.size = size
-        self.radius = (size / 2)
-        self.color = color
-        self.programmatic_object_shape = programmatic_object_shape
-        self.is_asteroid = is_asteroid
-        self.is_owned_by_player = is_owned_by_player
-        self.duration_remaining = duration_remaining
+        # First, the positional arguments.
+        # These are required to be supplied by
+        # the call to the GameObject constructor.
+        self.initial_parameters['starting_x'] = args[0]
+        self.initial_parameters['starting_y'] = args[1]
+        self.initial_parameters['x_velocity'] = args[2]
+        self.initial_parameters['y_velocity'] = args[3]
+        self.initial_parameters['angular_velocity'] = args[4]
 
-        # GameObjects are not UserInterfaceObjects,
-        # though UserInterfaceObjects are GameObjects.
-        self.is_user_interface_object = False
+        # Here, we're loading the initial_parameters
+        # dictionary with default values for all
+        # of the anticipated keyword arguments
+        # that might be handed to GameObjects
+        # on intialization:
+        self.initial_parameters['current_angle_in_degrees'] = 0
+        self.initial_parameters['size'] = 1
+        self.initial_parameters['color'] = WHITE
+        self.initial_parameters['programmatic_object_shape'] = 1
+        self.initial_parameters['is_owned_by_player'] = False
+        self.initial_parameters['duration_remaining'] = None
+        self.initial_parameters['max_velocity'] = 4
 
-        # Initializes the ship position properly.
-        # Stuff starts in the top left and gets moved once into
-        # its expected starting position at the end of __init__().
+        # Now we replace the defaults with values specified
+        # by kwargs, and also set up this instance's
+        # attributes according to either the default or,
+        # if provided, the specified argument.
+        # Note that this also covers the non-keyword args, as they
+        # have already been added to the intial_parameters dictionary.
+        # Also note that in Python 3+ it's dict.items(),
+        # whereas in Python 2 it's dict.iteritems()
+        for (each_key, default_value) in self.initial_parameters.items():
+
+            specified_value = kwargs.get(each_key, default_value)
+
+            # This is effectively the same as setting self.kwarg = kwarg:
+            setattr(self, each_key, specified_value)
+
+            # Also overwrite the value in the initial_parameters dictionary
+            # to maintain a record of initial values for later use.
+            self.initial_parameters[each_key] = specified_value
+
+        # Now to initialize the derived parameters.
+        # These are not handed in either the args or
+        # the kwargs, and are instead derived from them.
+
+        self.radius = (self.size / 2)
+
         self.x = 0
         self.y = 0
         self.move_by_specified_amount(self.starting_x, self.starting_y)
@@ -132,7 +157,7 @@ class GameObject(object):
             if player_fired_shot is False:
                 if self.is_owned_by_player is True:
                     if isinstance(self, Shot) is False:
-                        if self.is_user_interface_object is False:
+                        if isinstance(self, UserInterfaceObject) is False:
                             draw_programmatic_object(
                                 self.x,
                                 self.y,
@@ -171,7 +196,7 @@ class GameObject(object):
             # it should bounce off the edges of the map, rather than
             # the screen (or it should be destroyed, for Shot).
             if ((self.x - self.radius) < MAP_X):
-                if self.is_asteroid is True:
+                if isinstance(self, Asteroid) is True:
                     if self in asteroid_objects_array:
                         asteroid_objects_array.remove(self)
                 elif isinstance(self, Shot) is True:
@@ -187,7 +212,7 @@ class GameObject(object):
                     raise Exception("Error! Object out of bounds")
 
             if ((self.x + self.radius) > MAP_X2):
-                if self.is_asteroid is True:
+                if isinstance(self, Asteroid) is True:
                     if self in asteroid_objects_array:
                         asteroid_objects_array.remove(self)
                 elif isinstance(self, Shot) is True:
@@ -203,7 +228,7 @@ class GameObject(object):
                     raise Exception("Error! Object out of bounds")
 
             if ((self.y - self.radius) < MAP_Y):
-                if self.is_asteroid is True:
+                if isinstance(self, Asteroid) is True:
                     if self in asteroid_objects_array:
                         asteroid_objects_array.remove(self)
                 elif isinstance(self, Shot) is True:
@@ -219,7 +244,7 @@ class GameObject(object):
                     print("Error! Object out of bounds and undeclared")
 
             if ((self.y + self.radius) > MAP_Y2):
-                if self.is_asteroid is True:
+                if isinstance(self, Asteroid) is True:
                     if self in asteroid_objects_array:
                         asteroid_objects_array.remove(self)
                 elif isinstance(self, Shot) is True:
@@ -802,20 +827,10 @@ class AlienShip(GameObject):
     and shoots both randomly and at the player's ship.
     '''
 
-    def __init__(self, starting_x, starting_y,
-                 x_velocity, y_velocity,
-                 angular_velocity,
-                 current_angle_in_degrees=0,
-                 size=1, color=WHITE, programmatic_object_shape=-4,
-                 is_asteroid=False, is_owned_by_player=False,
-                 duration_remaining=None, specific_max_velocity=5):
-        GameObject.__init__(self,
-                            starting_x, starting_y,
-                            x_velocity, y_velocity,
-                            angular_velocity, current_angle_in_degrees,
-                            size, color, programmatic_object_shape,
-                            is_asteroid, is_owned_by_player,
-                            duration_remaining, specific_max_velocity)
+    def __init__(self, *args, **kwargs):
+
+        GameObject.__init__(self, *args, **kwargs)
+
         self.pixellus_cannon_recharge_ticker = 0
 
     def spawn_debris_cloud(self):
@@ -967,44 +982,24 @@ class Debris(GameObject):
     pass
 
 
-class UserInterfaceObject(GameObject):    
-    ''' Creates user interface objects, which may be displayed visually and can not process physics. '''
+class UserInterfaceObject(GameObject):
+    '''
+    Create a UserInterfaceObject, inheriting
+    from GameObject for visual display.
 
-    def __init__(self, starting_x, starting_y, x_velocity, y_velocity, angular_velocity, current_angle_in_degrees=0, size=1, color=WHITE, programmatic_object_shape=1, duration_remaining=None, player_life_icon_number=None):
-        
-        GameObject.__init__(self, starting_x, starting_y, x_velocity, y_velocity, angular_velocity, current_angle_in_degrees, size, color, programmatic_object_shape, duration_remaining, player_life_icon_number)
-        
-        self.player_life_icon_number = player_life_icon_number
-        
-        self.is_user_interface_object = True
-        
-    '''    
-    
-    def __init__(starting_x, starting_y, current_angle_in_degrees=0, size=1, color=WHITE, programmatic_object_shape=1)
-        
-        ## UserInterfaceObjects have many similar graphical attributes to GameObjects... because some of them are identical. @_@
-        
-        self.starting_x = starting_x
-        self.starting_y = starting_y
-        
-        self.current_angle_in_degrees = current_angle_in_degrees
-        
-        self.size = size
-        
-        self.color = color
-        
-        self.programmatic_object_shape = programmatic_object_shape
-        
-        
-        self.x = 0
-        self.y = 0
-            
-        self.move_by_specified_amount(self.starting_x, self.starting_y)
+    UserInterfaceObjects do not process physics.
+    '''
 
-    
-    '''    
-    
-    
+    def __init__(self, *args, **kwargs):
+
+        # This transition to star-args is becoming considerably
+        # more complicated than I believed it would be.
+        # Nevertheless, this works perfectly:
+        GameObject.__init__(self, *args, **kwargs)
+
+        self.player_life_icon_number = kwargs['player_life_icon_number']
+
+
 # # # # Functions # # # #
 
 
@@ -1020,7 +1015,7 @@ def spawn_new_player_ship():
         new_player_ship_size = NPS_size = 30
         new_player_ship_starting_coords = NPS_starting_coords_upperleft_x, NPS_starting_coords_upperleft_y = ((SCREEN_WIDTH // 2) - (NPS_size / 2)), ((SCREEN_HEIGHT // 2) - (NPS_size / 2))
 
-        new_player_ship_object = PlayerShip(NPS_starting_coords_upperleft_x, NPS_starting_coords_upperleft_y, 0, 0, 0, is_owned_by_player=True, programmatic_object_shape=0, color=WHITE, size=NPS_size, specific_max_velocity=8)
+        new_player_ship_object = PlayerShip(NPS_starting_coords_upperleft_x, NPS_starting_coords_upperleft_y, 0, 0, 0, is_owned_by_player=True, programmatic_object_shape=0, color=WHITE, size=NPS_size, max_velocity=8)
         player_ship_objects_array.append(new_player_ship_object)    
     
     
@@ -1133,19 +1128,19 @@ def create_new_asteroid_object(supplied_starting_x=None, supplied_starting_y=Non
         random_size = 100
         random_starting_x_velocity = (random_x_velocity_selector / 3)
         random_starting_y_velocity = (random_y_velocity_selector / 3)        
-        random_specific_max_velocity = 3
+        random_max_velocity = 3
         random_angular_velocity = random_angular_velocity_selector
     elif random_size_selector == 2:
         random_size = 50
         random_starting_x_velocity = (random_x_velocity_selector / 1.5)
         random_starting_y_velocity = (random_y_velocity_selector / 1.5)
-        random_specific_max_velocity = 6
+        random_max_velocity = 6
         random_angular_velocity = random_angular_velocity_selector * 2
     elif random_size_selector == 3:
         random_starting_x_velocity = random_x_velocity_selector
         random_starting_y_velocity = random_y_velocity_selector
         random_size = 20
-        random_specific_max_velocity = 9
+        random_max_velocity = 9
         random_angular_velocity = random_angular_velocity_selector * 3
     else:
         # print("Weird error in create_new_asteroid_object()!")
@@ -1202,7 +1197,7 @@ def create_new_asteroid_object(supplied_starting_x=None, supplied_starting_y=Non
     else:
         random_asteroid_shape = supplied_asteroid_shape
     
-    new_asteroid_object = Asteroid(random_starting_x, random_starting_y, random_starting_x_velocity, random_starting_y_velocity, random_angular_velocity, current_angle_in_degrees=0, programmatic_object_shape=random_asteroid_shape, is_asteroid=True, size=random_size)
+    new_asteroid_object = Asteroid(random_starting_x, random_starting_y, random_starting_x_velocity, random_starting_y_velocity, random_angular_velocity, current_angle_in_degrees=0, programmatic_object_shape=random_asteroid_shape, size=random_size)
     
     
     asteroid_objects_array.append(new_asteroid_object)
@@ -1668,20 +1663,20 @@ player_ship_objects_array = []
 debris_objects_array = []
 player_life_icons_array = []                
             
-#def __init__(self, starting_x, starting_y, x_velocity, y_velocity, max_velocity, angular_velocity, current_angle_in_degrees=0, size=1, color=WHITE, programmatic_object_shape=1, is_asteroid=False, is_owned_by_player=False):
+#def __init__(self, starting_x, starting_y, x_velocity, y_velocity, max_velocity, angular_velocity, current_angle_in_degrees=0, size=1, color=WHITE, programmatic_object_shape=1, is_owned_by_player=False):
                 
             
 ## Test asteroids
-#third_new_asteroid_object = GameObject(0, 0, 1, 1, 1, is_asteroid=True, size=100)
+#third_new_asteroid_object = GameObject(0, 0, 1, 1, 1, size=100)
 #asteroid_objects_array.append(third_new_asteroid_object)
 
-#second_new_asteroid_object = GameObject(0, 0, 2, 2, 2, is_asteroid=True, color=GREEN, size=50)
+#second_new_asteroid_object = GameObject(0, 0, 2, 2, 2, color=GREEN, size=50)
 #asteroid_objects_array.append(second_new_asteroid_object)
 
-#new_asteroid_object = GameObject(0, 0, 4, 4, 4, is_asteroid=True, color=RED, size=25)
+#new_asteroid_object = GameObject(0, 0, 4, 4, 4, color=RED, size=25)
 #asteroid_objects_array.append(new_asteroid_object)
 
-#fourth_new_asteroid_object = GameObject(0, 0, 8, 8, 8, is_asteroid=True, color=BLUE, size=12)
+#fourth_new_asteroid_object = GameObject(0, 0, 8, 8, 8, color=BLUE, size=12)
 #asteroid_objects_array.append(fourth_new_asteroid_object)
 
 
