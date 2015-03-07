@@ -78,8 +78,8 @@ class GameObject:
     def __init__(self, starting_x, starting_y, x_velocity, y_velocity,
                  angular_velocity, current_angle_in_degrees=0, size=1,
                  color=WHITE, programmatic_object_shape=1, is_asteroid=False,
-                 is_owned_by_player=False, is_debris_object=False,
-                 duration_remaining=None, specific_max_velocity=None):
+                 is_owned_by_player=False, duration_remaining=None,
+                 specific_max_velocity=None):
 
         self.starting_x = starting_x
         self.starting_y = starting_y
@@ -100,7 +100,6 @@ class GameObject:
         self.programmatic_object_shape = programmatic_object_shape
         self.is_asteroid = is_asteroid
         self.is_owned_by_player = is_owned_by_player
-        self.is_debris_object = is_debris_object
         self.duration_remaining = duration_remaining
 
         # GameObjects are not UserInterfaceObjects,
@@ -178,7 +177,7 @@ class GameObject:
                 elif isinstance(self, Shot) is True:
                     if self in shot_objects_array:
                         shot_objects_array.remove(self)
-                elif self.is_debris_object is True:
+                elif isinstance(self, Debris) is True:
                     if self in debris_objects_array:
                         debris_objects_array.remove(self)
                 elif isinstance(self, AlienShip) is True:
@@ -194,7 +193,7 @@ class GameObject:
                 elif isinstance(self, Shot) is True:
                     if self in shot_objects_array:
                         shot_objects_array.remove(self)
-                elif self.is_debris_object is True:
+                elif isinstance(self, Debris) is True:
                     if self in debris_objects_array:
                         debris_objects_array.remove(self)
                 elif isinstance(self, AlienShip) is True:
@@ -210,7 +209,7 @@ class GameObject:
                 elif isinstance(self, Shot) is True:
                     if self in shot_objects_array:
                         shot_objects_array.remove(self)
-                elif self.is_debris_object is True:
+                elif isinstance(self, Debris) is True:
                     if self in debris_objects_array:
                         debris_objects_array.remove(self)
                 elif isinstance(self, AlienShip) is True:
@@ -226,7 +225,7 @@ class GameObject:
                 elif isinstance(self, Shot) is True:
                     if self in shot_objects_array:
                         shot_objects_array.remove(self)
-                elif self.is_debris_object is True:
+                elif isinstance(self, Debris) is True:
                     if self in debris_objects_array:
                         debris_objects_array.remove(self)
                 elif isinstance(self, AlienShip) is True:
@@ -531,7 +530,7 @@ class GameObject:
         # to be usable for Shot objects, as well.
         self.duration_remaining -= duration_decrement
         if self.duration_remaining <= 0:
-            if self.is_debris_object:
+            if isinstance(self, Debris):
                 if self in debris_objects_array:
                     debris_objects_array.remove(self)
             if isinstance(self, Shot):
@@ -564,7 +563,6 @@ class Asteroid(GameObject):
                                        random_x_velocity_result,
                                        random_y_velocity_result,
                                        0, size=4, programmatic_object_shape=-1,
-                                       is_debris_object=True,
                                        duration_remaining=random_duration)
             debris_objects_array.append(new_debris_object)
 
@@ -794,7 +792,6 @@ class PlayerShip(GameObject):
                                                    current_angle_in_degrees=random_angle,
                                                    size=self.size,
                                                    programmatic_object_shape=-3,
-                                                   is_debris_object=True,
                                                    duration_remaining=random_duration)
             debris_objects_array.append(new_player_ship_debris_object)
 
@@ -811,14 +808,13 @@ class AlienShip(GameObject):
                  current_angle_in_degrees=0,
                  size=1, color=WHITE, programmatic_object_shape=-4,
                  is_asteroid=False, is_owned_by_player=False,
-                 is_debris_object=False, duration_remaining=None,
-                 specific_max_velocity=5):
+                 duration_remaining=None, specific_max_velocity=5):
         GameObject.__init__(self,
                             starting_x, starting_y,
                             x_velocity, y_velocity,
                             angular_velocity, current_angle_in_degrees,
                             size, color, programmatic_object_shape,
-                            is_asteroid, is_owned_by_player, is_debris_object,
+                            is_asteroid, is_owned_by_player,
                             duration_remaining, specific_max_velocity)
         self.pixellus_cannon_recharge_ticker = 0
 
@@ -840,7 +836,6 @@ class AlienShip(GameObject):
                 = Debris(self.x, self.y,
                          random_x_velocity_result, random_y_velocity_result,
                          0, size=4, programmatic_object_shape=-1,
-                         is_debris_object=True,
                          duration_remaining=random_duration)
             debris_objects_array.append(new_debris_object)
 
