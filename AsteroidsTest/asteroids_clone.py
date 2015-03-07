@@ -69,7 +69,7 @@ BLUE = [0, 0, 255]
 
 # # # # Classes # # # #
 
-class GameObject:
+class GameObject(object):
     '''
     Create a programmatically-drawn object in the playing field.
     GameObjects are capable of movement, display, and routine updating.
@@ -940,21 +940,33 @@ class AlienShip(GameObject):
 
 
 class Shot(GameObject):
+    '''
+    Shot objects are spawned by PlayerShips and AlienShips
+    during their respective shooting events.
+
+    Shots will destroy Asteroids on contact.
+    Shots may destroy PlayerShips or AlienShips if their
+    is_owned_by_player check fails or passes, respectively.
+
+    See the GameObject move function for details
+    on Shot collision detection and effects.
+    '''
+    # Why am I making empty classes?
+    # Answer: isinstance checking.
+    # ... and future modularity.
+
     pass
-    
-    # MAEK HIT THANGS      (( collision solved in GameObject.move() ))
-    
-    # Why am I making empty classes? It IS a bit easier to parse the object creation lines, but still... It seems wasteful.
-    # Would it be even easier to read the code if I refactored all the shot mechanics into stuff handled by the Shot class, or would it be harder?
-    # Would that make redundancy for stuff? I'm thinking about the collision code in GameObject.move(). Also, all those self.is_foo_object tags...    
-    
-        
+
 
 class Debris(GameObject):
+    '''
+    Debris objects spawn from destroyed
+    Asteroids, PlayerShips, and AlienShips.
+    '''
+
     pass
 
 
-    
 class UserInterfaceObject(GameObject):    
     ''' Creates user interface objects, which may be displayed visually and can not process physics. '''
 
