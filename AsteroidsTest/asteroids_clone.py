@@ -78,9 +78,8 @@ class GameObject:
     def __init__(self, starting_x, starting_y, x_velocity, y_velocity,
                  angular_velocity, current_angle_in_degrees=0, size=1,
                  color=WHITE, programmatic_object_shape=1, is_asteroid=False,
-                 is_owned_by_player=False, is_alien_ship=False,
-                 is_debris_object=False, duration_remaining=None,
-                 specific_max_velocity=None):
+                 is_owned_by_player=False, is_debris_object=False,
+                 duration_remaining=None, specific_max_velocity=None):
 
         self.starting_x = starting_x
         self.starting_y = starting_y
@@ -101,7 +100,6 @@ class GameObject:
         self.programmatic_object_shape = programmatic_object_shape
         self.is_asteroid = is_asteroid
         self.is_owned_by_player = is_owned_by_player
-        self.is_alien_ship = is_alien_ship
         self.is_debris_object = is_debris_object
         self.duration_remaining = duration_remaining
 
@@ -168,7 +166,7 @@ class GameObject:
 
         if ((self.is_owned_by_player is False)
            or (isinstance(self, Shot) is True)
-           or (self.is_alien_ship is True)):
+           or (isinstance(self, AlienShip) is True)):
 
             # If GameObject is not owned by the player or is a Shot object,
             # it should bounce off the edges of the map, rather than
@@ -183,7 +181,7 @@ class GameObject:
                 elif self.is_debris_object is True:
                     if self in debris_objects_array:
                         debris_objects_array.remove(self)
-                elif self.is_alien_ship is True:
+                elif isinstance(self, AlienShip) is True:
                     if self in alien_ship_objects_array:
                         alien_ship_objects_array.remove(self)
                 else:
@@ -199,7 +197,7 @@ class GameObject:
                 elif self.is_debris_object is True:
                     if self in debris_objects_array:
                         debris_objects_array.remove(self)
-                elif self.is_alien_ship is True:
+                elif isinstance(self, AlienShip) is True:
                     if self in alien_ship_objects_array:
                         alien_ship_objects_array.remove(self)
                 else:
@@ -215,7 +213,7 @@ class GameObject:
                 elif self.is_debris_object is True:
                     if self in debris_objects_array:
                         debris_objects_array.remove(self)
-                elif self.is_alien_ship is True:
+                elif isinstance(self, AlienShip) is True:
                     if self in alien_ship_objects_array:
                         alien_ship_objects_array.remove(self)
                 else:
@@ -231,7 +229,7 @@ class GameObject:
                 elif self.is_debris_object is True:
                     if self in debris_objects_array:
                         debris_objects_array.remove(self)
-                elif self.is_alien_ship is True:
+                elif isinstance(self, AlienShip) is True:
                     if self in alien_ship_objects_array:
                         alien_ship_objects_array.remove(self)
                 else:
@@ -276,7 +274,7 @@ class GameObject:
                  # AND also can the player's ship be harmed?
                  and (PLAYER_SHIP_IS_INVULNERABLE is False)))
                 # IF NOT, is it an alien ship?
-                or (self.is_alien_ship is True)):
+                or (isinstance(self, AlienShip) is True)):
 
             for each_asteroid in asteroid_objects_array:
                 distance_between_them_as_hypotenuse \
@@ -334,7 +332,7 @@ class GameObject:
         # [player ship shot, player ship]-detection.
         # Note that the previous section handled asteroids hitting
         # alien ships and alien ship shots hitting asteroids.
-        if self.is_alien_ship is True:
+        if isinstance(self, AlienShip) is True:
 
             # Collision with player shots:
             for each_shot_object in shot_objects_array:
@@ -813,15 +811,14 @@ class AlienShip(GameObject):
                  current_angle_in_degrees=0,
                  size=1, color=WHITE, programmatic_object_shape=-4,
                  is_asteroid=False, is_owned_by_player=False,
-                 is_alien_ship=True, is_debris_object=False,
-                 duration_remaining=None, specific_max_velocity=5):
+                 is_debris_object=False, duration_remaining=None,
+                 specific_max_velocity=5):
         GameObject.__init__(self,
                             starting_x, starting_y,
                             x_velocity, y_velocity,
                             angular_velocity, current_angle_in_degrees,
                             size, color, programmatic_object_shape,
-                            is_asteroid, is_owned_by_player,
-                            is_alien_ship, is_debris_object,
+                            is_asteroid, is_owned_by_player, is_debris_object,
                             duration_remaining, specific_max_velocity)
         self.pixellus_cannon_recharge_ticker = 0
 
@@ -1085,7 +1082,6 @@ def randomly_generate_new_alien_ship():
                                       random_alien_y_velocity,
                                       0,
                                       programmatic_object_shape=-4,
-                                      is_alien_ship=True,
                                       size=random_alien_size)
     alien_ship_objects_array.append(new_alien_ship_object)
 
@@ -1665,7 +1661,7 @@ player_ship_objects_array = []
 debris_objects_array = []
 player_life_icons_array = []                
             
-#def __init__(self, starting_x, starting_y, x_velocity, y_velocity, max_velocity, angular_velocity, current_angle_in_degrees=0, size=1, color=WHITE, programmatic_object_shape=1, is_asteroid=False, is_owned_by_player=False, is_alien_ship=False):
+#def __init__(self, starting_x, starting_y, x_velocity, y_velocity, max_velocity, angular_velocity, current_angle_in_degrees=0, size=1, color=WHITE, programmatic_object_shape=1, is_asteroid=False, is_owned_by_player=False):
                 
             
 ## Test asteroids
