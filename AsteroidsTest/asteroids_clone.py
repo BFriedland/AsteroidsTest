@@ -929,48 +929,29 @@ class AlienShip(GameObject):
                     self.x_velocity *= -1
                     self.y_velocity *= -1
 
-    def shoot_at_player_or_random_angle(self, force_random_angle=False, force_player_ship=False):
-        ''' Shoot at the player from the AlienShip if in a given distance, or at a random angle if not. May be handed parameters to force one or the other. '''
-        
-        # # # # This seems to make the game marginally harder than the original Asteroids! actually was.
+    def shoot_at_random_angle(self):
         '''
-        if (len(player_ship_objects_array) > 0):
-            for each_player_ship in player_ship_objects_array:
-                
-                x_distance_between_alien_and_player = each_player_ship.x - self.x
-                y_distance_between_alien_and_player = each_player_ship.y - self.y
-                
-                distance_between_them_as_hypotenuse = math.sqrt((x_distance_between_alien_and_player * x_distance_between_alien_and_player) + (y_distance_between_alien_and_player * y_distance_between_alien_and_player))
-                
-                if distance_between_them_as_hypotenuse <= 200:
-                    ## Then try to fire at the player. How to do it:
-                    ## - subtract player's coords from alien's coords
-                    ## - multiply the resulting x and y distances by the fraction of shot_max_velocities (see player ship's shot velocity) per resulting_hypotenuses
-                    ## - create a shot with exactly those values.
-                    ## (shot velocity: 14)
-                    
-                    ratio_of_shot_velocities_per_hypotenuse = (14 / distance_between_them_as_hypotenuse)
-                    
-                    alien_shot_x_velocity = (x_distance_between_alien_and_player * ratio_of_shot_velocities_per_hypotenuse)
-                    alien_shot_y_velocity = (y_distance_between_alien_and_player * ratio_of_shot_velocities_per_hypotenuse)
-                    
-                else:
-                    random_alien_shot_angle = random.randint(0, 359)
-                    alien_shot_x_velocity, alien_shot_y_velocity = rotate_these_points_around_that_point(0, -14, 0, 0, random_alien_shot_angle)
-                    
-                new_shot_object = Shot(self.x, self.y, alien_shot_x_velocity, alien_shot_y_velocity, 0, self.current_angle_in_degrees, is_owned_by_player=self.is_owned_by_player, is_shot_object=True, programmatic_object_shape=-1, size=4, duration_remaining=26)
-                shot_objects_array.append(new_shot_object)
-        '''        
-                
-        #else:
-            ## For when the player is not around. ... ((or maybe the other stuff was not in the original asteroids))
+        Cause the alien ship to shoot at a random angle.
+        '''
+
         random_alien_shot_angle = random.randint(0, 359)
-        alien_shot_x_velocity, alien_shot_y_velocity = rotate_these_points_around_that_point(0, -14, 0, 0, random_alien_shot_angle)
-                    
-        new_shot_object = Shot(self.x, self.y, alien_shot_x_velocity, alien_shot_y_velocity, 0, self.current_angle_in_degrees, is_owned_by_player=self.is_owned_by_player, is_shot_object=True, programmatic_object_shape=-1, size=4, duration_remaining=26)
+        alien_shot_x_velocity, alien_shot_y_velocity \
+            = rotate_these_points_around_that_point(0, -14, 0, 0,
+                                                    random_alien_shot_angle)
+
+        new_shot_object = Shot(self.x, self.y,
+                               alien_shot_x_velocity,
+                               alien_shot_y_velocity,
+                               0,
+                               self.current_angle_in_degrees,
+                               is_owned_by_player=self.is_owned_by_player,
+                               is_shot_object=True,
+                               programmatic_object_shape=-1,
+                               size=4,
+                               duration_remaining=26)
         shot_objects_array.append(new_shot_object)
-                    
-                    
+
+
 class Shot(GameObject):
     pass
     
@@ -1861,7 +1842,7 @@ while keep_window_open == True:
                 each_alien_ship_object.pixellus_cannon_recharge_ticker += 1
             
             if each_alien_ship_object.pixellus_cannon_recharge_ticker >= 10:
-                each_alien_ship_object.shoot_at_player_or_random_angle()
+                each_alien_ship_object.shoot_at_random_angle()
                 each_alien_ship_object.pixellus_cannon_recharge_ticker = 0
     
     ## This part's debug code ---v    
