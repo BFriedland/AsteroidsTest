@@ -172,14 +172,17 @@ class GameObject(object):
         global player_lives_left
         global score
 
-        if ((self.is_owned_by_player is False)
-           or (isinstance(self, Shot) is True)
-           or (isinstance(self, AlienShip) is True)):
+        if isinstance(self, PlayerShip) is False:
 
-            # If GameObject is not owned by the player or is a Shot object,
-            # it should bounce off the edges of the map, rather than
-            # the screen (or it should be destroyed, for Shot).
-            if ((self.x - self.radius) < MAP_X):
+            if (((self.x - self.radius) < MAP_X)
+               or (((self.x + self.radius) > MAP_X2))
+               or (((self.y - self.radius) < MAP_Y))
+               or ((self.y + self.radius) > MAP_Y2)):
+
+                # If GameObject is not owned by the player or is a Shot object,
+                # it should bounce off the edges of the map, rather than
+                # the screen (or it should be destroyed, for Shot).
+                # if ((self.x - self.radius) < MAP_X):
                 if isinstance(self, Asteroid) is True:
                     if self in asteroid_objects_array:
                         asteroid_objects_array.remove(self)
@@ -193,55 +196,7 @@ class GameObject(object):
                     if self in alien_ship_objects_array:
                         alien_ship_objects_array.remove(self)
                 else:
-                    raise Exception("Error! Object out of bounds")
-
-            if ((self.x + self.radius) > MAP_X2):
-                if isinstance(self, Asteroid) is True:
-                    if self in asteroid_objects_array:
-                        asteroid_objects_array.remove(self)
-                elif isinstance(self, Shot) is True:
-                    if self in shot_objects_array:
-                        shot_objects_array.remove(self)
-                elif isinstance(self, Debris) is True:
-                    if self in debris_objects_array:
-                        debris_objects_array.remove(self)
-                elif isinstance(self, AlienShip) is True:
-                    if self in alien_ship_objects_array:
-                        alien_ship_objects_array.remove(self)
-                else:
-                    raise Exception("Error! Object out of bounds")
-
-            if ((self.y - self.radius) < MAP_Y):
-                if isinstance(self, Asteroid) is True:
-                    if self in asteroid_objects_array:
-                        asteroid_objects_array.remove(self)
-                elif isinstance(self, Shot) is True:
-                    if self in shot_objects_array:
-                        shot_objects_array.remove(self)
-                elif isinstance(self, Debris) is True:
-                    if self in debris_objects_array:
-                        debris_objects_array.remove(self)
-                elif isinstance(self, AlienShip) is True:
-                    if self in alien_ship_objects_array:
-                        alien_ship_objects_array.remove(self)
-                else:
-                    print("Error! Object out of bounds and undeclared")
-
-            if ((self.y + self.radius) > MAP_Y2):
-                if isinstance(self, Asteroid) is True:
-                    if self in asteroid_objects_array:
-                        asteroid_objects_array.remove(self)
-                elif isinstance(self, Shot) is True:
-                    if self in shot_objects_array:
-                        shot_objects_array.remove(self)
-                elif isinstance(self, Debris) is True:
-                    if self in debris_objects_array:
-                        debris_objects_array.remove(self)
-                elif isinstance(self, AlienShip) is True:
-                    if self in alien_ship_objects_array:
-                        alien_ship_objects_array.remove(self)
-                else:
-                    print("Error! Object out of bounds and undeclared")
+                    raise Exception("{} out of bounds!".format(str(self)))
 
         elif ((self.is_owned_by_player is True)
               and (isinstance(self, Shot) is False)):
