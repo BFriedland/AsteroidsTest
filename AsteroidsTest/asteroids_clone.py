@@ -150,22 +150,6 @@ class GameObject(object):
                                  self.color,
                                  self.size)
 
-        # If the ship is accelerating, draw exhaust behind the ship.
-        # This was kind of a last-minute feature. It'll be refactored
-        # whenever I have enough time to work on something this minor.
-        if player_is_accelerating is True:
-            if player_fired_shot is False:
-                if self.is_owned_by_player is True:
-                    if isinstance(self, Shot) is False:
-                        if isinstance(self, UserInterfaceObject) is False:
-                            draw_programmatic_object(
-                                self.x,
-                                self.y,
-                                self.current_angle_in_degrees,
-                                this_programmatic_object_shape=-2,
-                                color=self.color,
-                                size=self.size)
-
     def move_by_specified_amount(self, delta_x, delta_y):
         '''
         Move the GameObject by the specified x, y amount.
@@ -819,6 +803,28 @@ class PlayerShip(GameObject):
                                                    programmatic_object_shape=-3,
                                                    duration_remaining=random_duration)
             debris_objects_array.append(new_player_ship_debris_object)
+
+    def draw(self):
+        '''
+        Call GameObject.draw() for this PlayerShip.
+
+        If accelerating (but not during the firing
+        of a Shot), also draw ship exhaust.
+        '''
+
+        GameObject.draw(self)
+
+        # If the ship is accelerating, draw exhaust behind the ship.
+        if player_is_accelerating is True:
+            if player_fired_shot is False:
+                draw_programmatic_object(
+                    self.x,
+                    self.y,
+                    self.current_angle_in_degrees,
+                    this_programmatic_object_shape=-2,
+                    color=self.color,
+                    size=self.size
+                )
 
 
 class AlienShip(GameObject):
