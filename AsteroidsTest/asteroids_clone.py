@@ -655,10 +655,11 @@ class PlayerShip(GameObject):
                                                     self.x,
                                                     self.y,
                                                     self.current_angle_in_degrees)
+        # Synonymizing. It helped when I didn't know what I was doing...
         shot_start_location_x = rotated_ship_tip_x
         shot_start_location_y = rotated_ship_tip_y
 
-        # The vector it's traveling along:
+        # This gives the Shot a velocity of 14 in the correct direction:
         rotated_shot_velocity_x_modifier, rotated_shot_velocity_y_modifier \
             = rotate_these_points_around_that_point(0, -14, 0, 0,
                                                     self.current_angle_in_degrees)
@@ -706,7 +707,7 @@ class PlayerShip(GameObject):
         longest must be <2 seconds, shortest >0.5 seconds.
         '''
 
-        for each in range(0, 4):
+        for each_debris_piece in range(0, 4):
             random_duration = random.randint(24, 36)
             # Generate a velocity pair in a random direction with speed 10:
             random_angle = random.randint(0, 359)
@@ -1590,7 +1591,7 @@ def handle_keys():
 
 
 
-    
+
 # # # # Inits # # # #
 
 
@@ -1612,21 +1613,21 @@ clock = pygame.time.Clock()
 ## To keep the game running
 keep_window_open = True
 
-## Window title            
-pygame.display.set_caption(WINDOW_CAPTION)        
-        
-        
+## Window title
+pygame.display.set_caption(WINDOW_CAPTION)
+
+
 ## Init the GameObject arrays
-asteroid_objects_array = []        
-shot_objects_array = []        
+asteroid_objects_array = []
+shot_objects_array = []
 alien_ship_objects_array = []
 player_ship_objects_array = []
 debris_objects_array = []
-player_life_icons_array = []                
-            
+player_life_icons_array = []
+
 #def __init__(self, starting_x, starting_y, x_velocity, y_velocity, max_velocity, angular_velocity, current_angle_in_degrees=0, size=1, color=WHITE, programmatic_object_shape=1, is_owned_by_player=False):
                 
-            
+
 ## Test asteroids
 #third_new_asteroid_object = GameObject(0, 0, 1, 1, 1, size=100)
 #asteroid_objects_array.append(third_new_asteroid_object)
@@ -1674,7 +1675,7 @@ game_ticker = 0
 ## The player's score
 score = 0
 
-## IMPORTANT: Leave the next line commented to force the player to spam the firing keys instead of allowing them to hold them down.    
+## IMPORTANT: Leave the next line commented to force the player to spam the firing keys instead of allowing them to hold them down.
 #pygame.key.set_repeat(20, 20)     #  <--- ==  when_a_key_is_held_down_it_will_repeat_its_KEYDOWN_signal_with(repeat_delay_in_milliseconds, repeat_interval_in_milliseconds)
 
 ## Starts the game... on the start screen.
@@ -1684,42 +1685,42 @@ game_is_on_start_screen = True
 
 ## Debugging globals
 ratio_of_max_to_current_this_is_a_debugging_variable = 0
-game_paused = False    
-    
-    
+game_paused = False
+
+
 # # # # Main Loop # # # #
 
 while keep_window_open == True:
-                                        
-    
+
+
     ## Input handler variables
     button1_pressed, button2_pressed, button3_pressed = pygame.mouse.get_pressed()
     mouse_position = mouse_x, mouse_y = pygame.mouse.get_pos()
-    
+
     ## The if lets the game keep displaying ship exhaust even when paused, when ship exhaust reasonably ought to continue being displayed.
     if game_paused == False:
         player_fired_shot = False
         player_is_accelerating = False
-    
+
     ## Process keyboard input
     handle_keys()
-    
-    
+
+
     ## Game speed and event progression metering
     clock.tick(30)
-    
+
     ## Asteroids shouldn't be pausible, but this should help with debugging.
     if game_paused == False:
         game_ticker += 1
-                
+
     if ((game_ticker == 20) and (game_paused == False)):
         ## I don't know if this next line is helpful or not. That's probably a bad thing, but I want to worry about problems other than number size limitations right now! I'll learn it later and remember it forever after that point.
         game_ticker = 0
-        
+
         if are_we_using_player_ammo_this_game == True:
             if player_ammo < 3:
-                player_ammo += 1 
-        
+                player_ammo += 1
+
         ## This controls how often asteroids spawn.
         ## if ( (number of asteroids currently in action) is fewer than (the number we'd prefer) ):
         if (len(asteroid_objects_array) < 14):
@@ -1728,15 +1729,15 @@ while keep_window_open == True:
             asteroid_spawn_chance = random.randint(1, 100)
             if asteroid_spawn_chance > 30:
                 create_new_asteroid_object()
-        elif  (len(asteroid_objects_array) < 36):         
+        elif  (len(asteroid_objects_array) < 36):
             asteroid_spawn_chance = random.randint(1, 100)
             if asteroid_spawn_chance > 50:
                 create_new_asteroid_object()
-        elif  (len(asteroid_objects_array) < 48):         
+        elif  (len(asteroid_objects_array) < 48):
             asteroid_spawn_chance = random.randint(1, 100)
             if asteroid_spawn_chance > 90:
-                create_new_asteroid_object()        
-        
+                create_new_asteroid_object()
+
         ## This controls how early and how often aliens spawn.
         if (score >= 20):
             if (len(alien_ship_objects_array) < 1):
@@ -1747,15 +1748,15 @@ while keep_window_open == True:
                 alien_ship_spawn_chance = random.randint(1, 100)
                 if alien_ship_spawn_chance > 95:
                     randomly_generate_new_alien_ship()
-        
+
     ## Move all GameObjects and adjust their angles
     if ((game_ticker >= 0) and (game_paused == False)):
-    
+
         for each_asteroid_object in asteroid_objects_array:
             each_asteroid_object.move()
             each_asteroid_object.adjust_current_angle(each_asteroid_object.angular_velocity)
-            
-            
+
+
         for each_player_ship in player_ship_objects_array:
             each_player_ship.move()
             if PLAYER_HAS_ANGULAR_VELOCITY == True:
@@ -1763,45 +1764,45 @@ while keep_window_open == True:
             if PLAYER_SHIP_HAS_DRAG == True:
                 if ((player_is_accelerating == False) and (player_fired_shot == False)):
                     each_player_ship.brake_all_velocities(is_gradual_braking=True)
-            
-        
+
+
         for each_shot_object in shot_objects_array:
             each_shot_object.move()
             each_shot_object.adjust_current_angle(each_shot_object.angular_velocity)
-            
+
             each_shot_object.decrement_duration_and_if_necessary_destroy(1)
-        
-        
+
+
         for each_debris_object in debris_objects_array:
             each_debris_object.move()
             each_debris_object.adjust_current_angle(each_debris_object.angular_velocity)
-            
+
             ## Positive numbers decrement time remaining, negative numbers increment it. +1 brings it closer to deletion.
             each_debris_object.decrement_duration_and_if_necessary_destroy(1)
-        
+
         for each_alien_ship_object in alien_ship_objects_array:
             each_alien_ship_object.move()
             ## Alien ships do not rotate.
-            
+
             ## However, they can do other things, such as change directions without warning...
             random_alien_hard_velocity_adjustment_chance = random.randint(1, 100)
             if random_alien_hard_velocity_adjustment_chance > 98:
                 each_alien_ship_object.hard_velocity_adjustment()
-            elif random_alien_hard_velocity_adjustment_chance <= 3:    
+            elif random_alien_hard_velocity_adjustment_chance <= 3:
                 each_alien_ship_object.attempt_to_avoid_an_asteroid()
                 
             ## ... and fire Pixellus Cannons.
             random_alien_shot_chance = random.randint(1, 100)
             if random_alien_shot_chance > 70:
                 each_alien_ship_object.pixellus_cannon_recharge_ticker += 1
-            
+
             if each_alien_ship_object.pixellus_cannon_recharge_ticker >= 10:
                 each_alien_ship_object.shoot_at_random_angle()
                 each_alien_ship_object.pixellus_cannon_recharge_ticker = 0
-    
-    ## This part's debug code ---v    
+
+    ## This part's debug code ---v
     if ( ((game_ticker % 4) == 1) and (game_paused == False) ):
-        
+
         #if (len(asteroid_objects_array) > 0):
         #    # print("\nasteroid_objects_array[0].x_velocity == " + str(asteroid_objects_array[0].x_velocity))
         #    # print("asteroid_objects_array[0].y_velocity == " + str(asteroid_objects_array[0].y_velocity))
@@ -1831,11 +1832,11 @@ while keep_window_open == True:
         # print("MAP_X2 == " + str(MAP_X2))
         # print("MAP_Y == " + str(MAP_Y))
         # print("MAP_Y2 == " + str(MAP_Y2))
-        
+
     ## Note: I think we need to display things AFTER moving them.
-    render_all()                        
-                        
-    
+    render_all()
+
+
 
 
 
