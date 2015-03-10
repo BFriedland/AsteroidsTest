@@ -58,6 +58,10 @@ PLAYER_SHIP_HAS_DRAG = True
 SHOTS_INHERIT_VELOCITY = False
 # Is the player ship destroyed when it hits an asteroid?
 PLAYER_SHIP_IS_INVULNERABLE = False
+# Should players be forced to spam the fire key to shoot?
+# Original Asteroids! sez True.
+SPAM_FIRING = True
+
 
 # Color defs in RGB; critical for programmatic art.
 BLACK = [0, 0, 0]
@@ -68,6 +72,69 @@ BLUE = [0, 0, 255]
 
 
 # # # # Classes # # # #
+
+
+class GameState(object):
+    '''
+    Create an object that holds the state of the
+    game, from player gamestate.score to GameObject lists.
+    '''
+
+    def __init__(self):
+
+        # Init the GameObject arrays:
+        self.asteroid_objects_array = []
+        self.shot_objects_array = []
+        self.alien_ship_objects_array = []
+        self.player_ship_objects_array = []
+        self.debris_objects_array = []
+        self.player_life_icons_array = []
+
+        # This should be a constant... maybe?
+        self.are_we_using_player_ammo_this_game = False
+
+        self.player_ammo = 1
+
+        self.player_lives_left = 0
+
+        # Initializes a timer to make the player ship blink
+        # after it's been spawned. A specialized game ticker.
+        # Uhh... one Let's Play had a blink after respawn,
+        # another didn't, yet both were otherwise seemingly
+        # identical Asteroids!. Gonna leave this out for now.
+        self.time_since_player_ship_spawned = 0
+
+        # Protects the ship from being dragged to
+        # a stop when the player is moving it.
+        # Useful when PLAYER_SHIP_HAS_DRAG == True.
+        # Also used to determine when to draw exhaust.
+        self.player_is_accelerating = False
+
+        # player_fired_shot works alongside player_is_accelerating
+        # to prevent exhaust from being shown only when the ship is
+        # not being accelerated manually AND the player is firing a shot.
+        self.player_fired_shot = False
+
+        # Init the game_ticker -- it's used for making things happen
+        # at set intervals of each other in the main loop, independent
+        # of the game_ticker (perhaps this should be factored out
+        # in favor of a 100% clock-based system)
+        self.game_ticker = 0
+
+        # The player's gamestate.score
+        self.score = 0
+
+        # Starts the game... on the start screen.
+        self.game_is_on_start_screen = True
+
+        # To keep the game running.
+        # Allows exiting the main loop from subfunx.
+        self.keep_window_open = True
+
+        # # Debugging globals # #
+        self.ratio_of_max_to_current_this_is_a_debugging_variable = 0
+        self.game_paused = False
+
 
 class GameObject(object):
     '''
@@ -158,7 +225,7 @@ class GameObject(object):
         self.x += delta_x
         self.y += delta_y
 
-    def move(self):
+    def move(self, gamestate):
         '''
         Move the GameObject using its current velocity values;
         bounce off the edges of the playing field if indicated.
@@ -169,8 +236,8 @@ class GameObject(object):
 
         # Globals are a sign the code needs more objects.
         # Specifically, these should be stored in a GameState object.
-        global player_lives_left
-        global score
+        # global gamestate.player_lives_left
+        # global gamestate.score
 
         if isinstance(self, PlayerShip) is False:
 
@@ -184,17 +251,17 @@ class GameObject(object):
                 # the screen (or it should be destroyed, for Shot).
                 # if ((self.x - self.radius) < MAP_X):
                 if isinstance(self, Asteroid) is True:
-                    if self in asteroid_objects_array:
-                        asteroid_objects_array.remove(self)
+                    if self in gamestate.asteroid_objects_array:
+                        gamestate.asteroid_objects_array.remove(self)
                 elif isinstance(self, Shot) is True:
-                    if self in shot_objects_array:
-                        shot_objects_array.remove(self)
+                    if self in gamestate.shot_objects_array:
+                        gamestate.shot_objects_array.remove(self)
                 elif isinstance(self, Debris) is True:
-                    if self in debris_objects_array:
-                        debris_objects_array.remove(self)
+                    if self in gamestate.debris_objects_array:
+                        gamestate.debris_objects_array.remove(self)
                 elif isinstance(self, AlienShip) is True:
-                    if self in alien_ship_objects_array:
-                        alien_ship_objects_array.remove(self)
+                    if self in gamestate.alien_ship_objects_array:
+                        gamestate.alien_ship_objects_array.remove(self)
                 else:
                     raise Exception("{} out of bounds!".format(str(self)))
 
@@ -239,7 +306,7 @@ class GameObject(object):
                 # IF NOT, is it an alien ship?
                 or (isinstance(self, AlienShip) is True)):
 
-            for each_asteroid in asteroid_objects_array:
+            for each_asteroid in gamestate.asteroid_objects_array:
                 distance_between_them_as_hypotenuse \
                     = return_euclidean_distance(self, each_asteroid)
 
@@ -248,36 +315,36 @@ class GameObject(object):
                 if (combined_shot_and_asteroid_radius
                    >= distance_between_them_as_hypotenuse):
 
-                    if self in shot_objects_array:
-                        shot_objects_array.remove(self)
-                    if self in player_ship_objects_array:
+                    if self in gamestate.shot_objects_array:
+                        gamestate.shot_objects_array.remove(self)
+                    if self in gamestate.player_ship_objects_array:
                         self.spawn_player_ship_debris_cloud()
-                        player_ship_objects_array.remove(self)
-                        remove_player_life()
-                    if self in alien_ship_objects_array:
+                        gamestate.player_ship_objects_array.remove(self)
+                        remove_player_life(gamestate)
+                    if self in gamestate.alien_ship_objects_array:
                         # Alien ships colliding with asteroids DO NOT
-                        # result in ++score. The aliens aren't bright
+                        # result in ++gamestate.score. The aliens aren't bright
                         # enough yet to make that a sensible mechanic
                         # for players to use at this stage of development.
                         self.spawn_debris_cloud()
-                        alien_ship_objects_array.remove(self)
+                        gamestate.alien_ship_objects_array.remove(self)
 
-                    if each_asteroid in asteroid_objects_array:
+                    if each_asteroid in gamestate.asteroid_objects_array:
 
                         if self.is_owned_by_player is True:
                             # If the thing destroying the asteroid
-                            # is_owned_by_player, then it gives score.
+                            # is_owned_by_player, then it gives gamestate.score.
                             # This SHOULD be handled separately;
-                            # score incrementing should pass object
+                            # gamestate.score incrementing should pass object
                             # references and event flags to a "referee"
                             # class which determines if the event in
-                            # question should alter the score.
+                            # question should alter the gamestate.score.
                             if each_asteroid.size == 100:
-                                score += 20
+                                gamestate.score += 20
                             elif each_asteroid.size == 50:
-                                score += 50
+                                gamestate.score += 50
                             elif each_asteroid.size == 20:
-                                score += 100
+                                gamestate.score += 100
 
                         if ((each_asteroid.size == 50)
                            or (each_asteroid.size == 100)):
@@ -289,7 +356,7 @@ class GameObject(object):
                                     self.y_velocity,
                                     self.size)
                         each_asteroid.spawn_debris_cloud()
-                        asteroid_objects_array.remove(each_asteroid)
+                        gamestate.asteroid_objects_array.remove(each_asteroid)
 
         # [Alien ship] collision with
         # [player ship shot, player ship]-detection.
@@ -298,7 +365,7 @@ class GameObject(object):
         if isinstance(self, AlienShip) is True:
 
             # Collision with player shots:
-            for each_shot_object in shot_objects_array:
+            for each_shot_object in gamestate.shot_objects_array:
                 if each_shot_object.is_owned_by_player is True:
 
                     distance_between_them_as_hypotenuse \
@@ -308,19 +375,19 @@ class GameObject(object):
                         = self.radius + each_shot_object.radius
                     if (combined_alien_and_shot_radius
                        >= distance_between_them_as_hypotenuse):
-                        if self in alien_ship_objects_array:
+                        if self in gamestate.alien_ship_objects_array:
                             if self.size == 40:
-                                score += 200
+                                gamestate.score += 200
                             elif self.size == 20:
-                                score += 1000
+                                gamestate.score += 1000
                             self.spawn_debris_cloud()
-                            alien_ship_objects_array.remove(self)
+                            gamestate.alien_ship_objects_array.remove(self)
 
-                        if each_shot_object in shot_objects_array:
-                            shot_objects_array.remove(each_shot_object)
+                        if each_shot_object in gamestate.shot_objects_array:
+                            gamestate.shot_objects_array.remove(each_shot_object)
 
             # Collision with player ships:
-            for each_player_ship in player_ship_objects_array:
+            for each_player_ship in gamestate.player_ship_objects_array:
                 # Here is where I realized iterating through player ship
                 # objects is a bit weird in a game where there's only one
                 # of them. The solution would be a heavier reliance on
@@ -332,23 +399,23 @@ class GameObject(object):
                     = self.radius + each_player_ship.radius
                 if (combined_alien_and_player_ship_radius
                    >= distance_between_them_as_hypotenuse):
-                    if self in alien_ship_objects_array:
+                    if self in gamestate.alien_ship_objects_array:
                         if self.size == 40:
-                            score += 200
+                            gamestate.score += 200
                         elif self.size == 20:
-                            score += 1000
+                            gamestate.score += 1000
                         self.spawn_debris_cloud()
-                        alien_ship_objects_array.remove(self)
-                    if each_player_ship in player_ship_objects_array:
+                        gamestate.alien_ship_objects_array.remove(self)
+                    if each_player_ship in gamestate.player_ship_objects_array:
                         each_player_ship.spawn_player_ship_debris_cloud()
-                        player_ship_objects_array.remove(each_player_ship)
-                        remove_player_life()
+                        gamestate.player_ship_objects_array.remove(each_player_ship)
+                        remove_player_life(gamestate)
 
         # [Alien shot] collision with [player ship]-detection.
         elif ((isinstance(self, Shot) is True)
               and (self.is_owned_by_player is False)):
 
-            for each_player_ship in player_ship_objects_array:
+            for each_player_ship in gamestate.player_ship_objects_array:
                 # See above note about oddity of iterating through
                 # a list of player ship objects.
                 # Also, it's a LIST, not an ARRAY!
@@ -358,12 +425,12 @@ class GameObject(object):
                     = self.radius + each_player_ship.radius
                 if (combined_alien_shot_and_player_ship_radius
                    >= distance_between_them_as_hypotenuse):
-                    if self in shot_objects_array:
-                        shot_objects_array.remove(self)
-                    if each_player_ship in player_ship_objects_array:
+                    if self in gamestate.shot_objects_array:
+                        gamestate.shot_objects_array.remove(self)
+                    if each_player_ship in gamestate.player_ship_objects_array:
                         each_player_ship.spawn_player_ship_debris_cloud()
-                        player_ship_objects_array.remove(each_player_ship)
-                        remove_player_life()
+                        gamestate.player_ship_objects_array.remove(each_player_ship)
+                        remove_player_life(gamestate)
 
         # Should -v be before or after -^  ?
         # ...
@@ -398,7 +465,7 @@ class GameObject(object):
         # Final three parameters:
         #     ship_center_x,
         #     ship_center_y,
-        #     player_ship_objects_array[0].current_angle_in_degrees
+        #     gamestate.player_ship_objects_array[0].current_angle_in_degrees
         rotated_x_velocity_increment, rotated_y_velocity_increment \
             = rotate_these_points_around_that_point(
                 x_acceleration,
@@ -495,11 +562,11 @@ class GameObject(object):
         self.duration_remaining -= duration_decrement
         if self.duration_remaining <= 0:
             if isinstance(self, Debris):
-                if self in debris_objects_array:
-                    debris_objects_array.remove(self)
+                if self in gamestate.debris_objects_array:
+                    gamestate.debris_objects_array.remove(self)
             if isinstance(self, Shot):
-                if self in shot_objects_array:
-                    shot_objects_array.remove(self)
+                if self in gamestate.shot_objects_array:
+                    gamestate.shot_objects_array.remove(self)
 
 
 class Asteroid(GameObject):
@@ -528,7 +595,7 @@ class Asteroid(GameObject):
                                        random_y_velocity_result,
                                        0, size=4, programmatic_object_shape=-1,
                                        duration_remaining=random_duration)
-            debris_objects_array.append(new_debris_object)
+            gamestate.debris_objects_array.append(new_debris_object)
 
     def break_large_asteroid_into_two_smaller_ones(self,
                                                    shot_x_velocity,
@@ -655,10 +722,11 @@ class PlayerShip(GameObject):
                                                     self.x,
                                                     self.y,
                                                     self.current_angle_in_degrees)
+        # Synonymizing. It helped when I didn't know what I was doing...
         shot_start_location_x = rotated_ship_tip_x
         shot_start_location_y = rotated_ship_tip_y
 
-        # The vector it's traveling along:
+        # This gives the Shot a velocity of 14 in the correct direction:
         rotated_shot_velocity_x_modifier, rotated_shot_velocity_y_modifier \
             = rotate_these_points_around_that_point(0, -14, 0, 0,
                                                     self.current_angle_in_degrees)
@@ -683,7 +751,7 @@ class PlayerShip(GameObject):
                                programmatic_object_shape=-1,
                                size=4,
                                duration_remaining=26)
-        shot_objects_array.append(new_shot_object)
+        gamestate.shot_objects_array.append(new_shot_object)
 
         # Repulsion effect on the ship.
         # Note that, as seen above, the center x and y
@@ -706,7 +774,7 @@ class PlayerShip(GameObject):
         longest must be <2 seconds, shortest >0.5 seconds.
         '''
 
-        for each in range(0, 4):
+        for each_debris_piece in range(0, 4):
             random_duration = random.randint(24, 36)
             # Generate a velocity pair in a random direction with speed 10:
             random_angle = random.randint(0, 359)
@@ -757,7 +825,7 @@ class PlayerShip(GameObject):
                                                    size=self.size,
                                                    programmatic_object_shape=-3,
                                                    duration_remaining=random_duration)
-            debris_objects_array.append(new_player_ship_debris_object)
+            gamestate.debris_objects_array.append(new_player_ship_debris_object)
 
     def draw(self):
         '''
@@ -770,8 +838,8 @@ class PlayerShip(GameObject):
         GameObject.draw(self)
 
         # If the ship is accelerating, draw exhaust behind the ship.
-        if player_is_accelerating is True:
-            if player_fired_shot is False:
+        if gamestate.player_is_accelerating is True:
+            if gamestate.player_fired_shot is False:
                 draw_programmatic_object(
                     self.x,
                     self.y,
@@ -813,7 +881,7 @@ class AlienShip(GameObject):
                          random_x_velocity_result, random_y_velocity_result,
                          0, size=4, programmatic_object_shape=-1,
                          duration_remaining=random_duration)
-            debris_objects_array.append(new_debris_object)
+            gamestate.debris_objects_array.append(new_debris_object)
 
     def hard_velocity_adjustment(self):
         '''
@@ -823,8 +891,8 @@ class AlienShip(GameObject):
         # I think simplicity is best, given what
         # the Asteroids! Let's Plays showed.
 
-        if (len(player_ship_objects_array) > 0):
-            for each_player_ship in player_ship_objects_array:
+        if (len(gamestate.player_ship_objects_array) > 0):
+            for each_player_ship in gamestate.player_ship_objects_array:
 
                 x_distance_between_alien_and_player \
                     = each_player_ship.x - self.x
@@ -880,8 +948,8 @@ class AlienShip(GameObject):
         Scan for nearby asteroids and adjust heading to to avoid them.
         '''
 
-        if (len(asteroid_objects_array) > 0):
-            for each_asteroid in asteroid_objects_array:
+        if (len(gamestate.asteroid_objects_array) > 0):
+            for each_asteroid in gamestate.asteroid_objects_array:
                 x_distance_between_alien_and_rock = self.x - each_asteroid.x
                 y_distance_between_alien_and_rock = self.y - each_asteroid.y
                 distance_between_them_as_hypotenuse \
@@ -912,7 +980,7 @@ class AlienShip(GameObject):
                                programmatic_object_shape=-1,
                                size=4,
                                duration_remaining=26)
-        shot_objects_array.append(new_shot_object)
+        gamestate.shot_objects_array.append(new_shot_object)
 
 
 class Shot(GameObject):
@@ -964,23 +1032,23 @@ class UserInterfaceObject(GameObject):
 # # # # Functions # # # #
 
 
-def spawn_new_player_ship():
+def spawn_new_player_ship(gamestate):
     ''' Create the player's Ship object. '''
     
-    global time_since_player_ship_spawned
+    # global gamestate.time_since_player_ship_spawned
     
-    if ( (len(player_ship_objects_array) == 0) and (len(debris_objects_array) == 0) ):
+    if ( (len(gamestate.player_ship_objects_array) == 0) and (len(gamestate.debris_objects_array) == 0) ):
         
-        time_since_player_ship_spawned = 0
+        gamestate.time_since_player_ship_spawned = 0
     
         new_player_ship_size = NPS_size = 30
         new_player_ship_starting_coords = NPS_starting_coords_upperleft_x, NPS_starting_coords_upperleft_y = ((SCREEN_WIDTH // 2) - (NPS_size / 2)), ((SCREEN_HEIGHT // 2) - (NPS_size / 2))
 
         new_player_ship_object = PlayerShip(NPS_starting_coords_upperleft_x, NPS_starting_coords_upperleft_y, 0, 0, 0, is_owned_by_player=True, programmatic_object_shape=0, color=WHITE, size=NPS_size, max_velocity=8)
-        player_ship_objects_array.append(new_player_ship_object)    
+        gamestate.player_ship_objects_array.append(new_player_ship_object)
     
     
-def randomly_generate_new_alien_ship():
+def randomly_generate_new_alien_ship(gamestate):
     '''
     Create a new AlienShip object with randomly
     generated features at the edge of the map.
@@ -1046,7 +1114,7 @@ def randomly_generate_new_alien_ship():
                                       0,
                                       programmatic_object_shape=-4,
                                       size=random_alien_size)
-    alien_ship_objects_array.append(new_alien_ship_object)
+    gamestate.alien_ship_objects_array.append(new_alien_ship_object)
 
 
 def create_new_asteroid_object(supplied_starting_x=None, supplied_starting_y=None, supplied_x_velocity=None, supplied_y_velocity=None, supplied_angular_velocity=None, supplied_asteroid_size=None, supplied_asteroid_shape=None):
@@ -1161,55 +1229,55 @@ def create_new_asteroid_object(supplied_starting_x=None, supplied_starting_y=Non
     new_asteroid_object = Asteroid(random_starting_x, random_starting_y, random_starting_x_velocity, random_starting_y_velocity, random_angular_velocity, current_angle_in_degrees=0, programmatic_object_shape=random_asteroid_shape, size=random_size)
     
     
-    asteroid_objects_array.append(new_asteroid_object)
+    gamestate.asteroid_objects_array.append(new_asteroid_object)
 
 
-def render_all():
+def render_all(gamestate):
     ''' Draw every GameObject in the main arrays via their draw() command. '''
 
     screen.fill(BLACK)
         
         
-    if len(asteroid_objects_array) > 0:
-        for each_asteroid_object in range(0, len(asteroid_objects_array)):
-            asteroid_objects_array[each_asteroid_object].draw()
+    if len(gamestate.asteroid_objects_array) > 0:
+        for each_asteroid_object in range(0, len(gamestate.asteroid_objects_array)):
+            gamestate.asteroid_objects_array[each_asteroid_object].draw()
     
-    if len(shot_objects_array) > 0:
-        for each_shot_object in range(0, len(shot_objects_array)):
-            shot_objects_array[each_shot_object].draw()
+    if len(gamestate.shot_objects_array) > 0:
+        for each_shot_object in range(0, len(gamestate.shot_objects_array)):
+            gamestate.shot_objects_array[each_shot_object].draw()
     
-    if len(player_ship_objects_array) > 0:
-        for each_player_ship in range(0, len(player_ship_objects_array)):
-            player_ship_objects_array[each_player_ship].draw()
+    if len(gamestate.player_ship_objects_array) > 0:
+        for each_player_ship in range(0, len(gamestate.player_ship_objects_array)):
+            gamestate.player_ship_objects_array[each_player_ship].draw()
 
-    if len(alien_ship_objects_array) > 0:
-        for each_alien_ship_object in range(0, len(alien_ship_objects_array)):
-            alien_ship_objects_array[each_alien_ship_object].draw()
+    if len(gamestate.alien_ship_objects_array) > 0:
+        for each_alien_ship_object in range(0, len(gamestate.alien_ship_objects_array)):
+            gamestate.alien_ship_objects_array[each_alien_ship_object].draw()
             
-    if len(debris_objects_array) > 0:
-        for each_debris_object in range(0, len(debris_objects_array)):
-            debris_objects_array[each_debris_object].draw()
+    if len(gamestate.debris_objects_array) > 0:
+        for each_debris_object in range(0, len(gamestate.debris_objects_array)):
+            gamestate.debris_objects_array[each_debris_object].draw()
         
     ## UserInterfaceObjects should be drawn last.
-    if len(player_life_icons_array) > 0:
-        for each_player_life_icon in range(0, len(player_life_icons_array)):
-            player_life_icons_array[each_player_life_icon].draw()
+    if len(gamestate.player_life_icons_array) > 0:
+        for each_player_life_icon in range(0, len(gamestate.player_life_icons_array)):
+            gamestate.player_life_icons_array[each_player_life_icon].draw()
     
-    ## The score counter:
+    ## The gamestate.score counter:
     ## font.render(text_to_be_rendered, ???, color) 
-    if game_is_on_start_screen == False:
-        score_text = font.render(str(score), True, WHITE)
+    if gamestate.game_is_on_start_screen == False:
+        gamestate.score_text = font.render(str(gamestate.score), True, WHITE)
     
         ## screen.blit(---^, (x, y)
-        screen.blit(score_text, (110, 16))
+        screen.blit(gamestate.score_text, (110, 16))
     
     
     
-    if ( (len(player_life_icons_array) <= 0) and (game_is_on_start_screen == False) ):
+    if ( (len(gamestate.player_life_icons_array) <= 0) and (gamestate.game_is_on_start_screen == False) ):
         game_over_text = font.render('GAME OVER', True, WHITE)
         screen.blit(game_over_text, ((SCREEN_CENTER_X - 95),(SCREEN_CENTER_Y - 90)))
     
-    if game_is_on_start_screen == True:
+    if gamestate.game_is_on_start_screen == True:
     
         
         asteroids_title_text = big_huge_font.render('ASTEROIDS', True, WHITE)
@@ -1229,53 +1297,54 @@ def render_all():
     
 
     
-def add_player_life():
+def add_player_life(gamestate):
     ''' Add a life to the player's total. '''
 
-    global player_lives_left
+    # global gamestate.player_lives_left
         
-    new_icon_x = (140 + (player_lives_left * 32))
+    new_icon_x = (140 + (gamestate.player_lives_left * 32))
     new_icon_y = 75
 
-    player_lives_left += 1
+    gamestate.player_lives_left += 1
         
-    new_player_life_icon = UserInterfaceObject(new_icon_x, new_icon_y, 0, 0, 0, current_angle_in_degrees=0, size=30, color=WHITE, programmatic_object_shape=0, player_life_icon_number=player_lives_left)
+    new_player_life_icon = UserInterfaceObject(new_icon_x, new_icon_y, 0, 0, 0, current_angle_in_degrees=0, size=30, color=WHITE, programmatic_object_shape=0, player_life_icon_number=gamestate.player_lives_left)
         
-    player_life_icons_array.append(new_player_life_icon)
+    gamestate.player_life_icons_array.append(new_player_life_icon)
     
 
-def remove_player_life():
+def remove_player_life(gamestate):
     ''' Remove a life from the player's total. '''
     
-    global player_lives_left
+    # global gamestate.player_lives_left
     
-    for each_icon in player_life_icons_array:
-        if each_icon.player_life_icon_number == player_lives_left:
-            if each_icon in player_life_icons_array:
-                player_life_icons_array.remove(each_icon)
+    for each_icon in gamestate.player_life_icons_array:
+        if each_icon.player_life_icon_number == gamestate.player_lives_left:
+            if each_icon in gamestate.player_life_icons_array:
+                gamestate.player_life_icons_array.remove(each_icon)
                 
-                player_lives_left -= 1
+                gamestate.player_lives_left -= 1
 
 
-def restart_game():
-    ''' Add three player lives, reset the score, clear all asteroids/aliens/shots, and spawn the ship. '''
+def restart_game(gamestate):
+    ''' Add three player lives, reset the gamestate.score, clear all asteroids/aliens/shots, and spawn the ship. '''
 
-    global score
+    # global gamestate.score
     
-    if ( (len(player_ship_objects_array) == 0) and (len(debris_objects_array) == 0) ):
+    if ( (len(gamestate.player_ship_objects_array) == 0) and (len(gamestate.debris_objects_array) == 0) ):
             
-        score = 0
+        gamestate.score = 0
         
-        clear_all_game_objects_from_the_map()
+        # also seen in handle_inputs... this is for thoroughness.
+        clear_all_game_objects_from_the_map(gamestate)
         
-        add_player_life()
-        add_player_life()
-        add_player_life()
+        add_player_life(gamestate)
+        add_player_life(gamestate)
+        add_player_life(gamestate)
         
-        spawn_new_player_ship()
+        spawn_new_player_ship(gamestate)
         
 
-def clear_all_game_objects_from_the_map():
+def clear_all_game_objects_from_the_map(gamestate):
     ''' Clear all GameObjects from the map. '''
 
     ## It wasn't doing it all in one pass, so repetition.
@@ -1283,25 +1352,25 @@ def clear_all_game_objects_from_the_map():
     ## Now I'm certain this can't be the right way to go about doing it. range(0, 2) was NOT sufficient to wipe all the asteroids...
     ## ... one from a split after the player ship hit a medium asteroid stuck around after range(0, 2) repetitions! WHY. -_-
     for each_repetition in range(0, 22):
-        if len(asteroid_objects_array) > 0:
-            for each_asteroid in asteroid_objects_array:
-                if each_asteroid in asteroid_objects_array:
-                    asteroid_objects_array.remove(each_asteroid)
+        if len(gamestate.asteroid_objects_array) > 0:
+            for each_asteroid in gamestate.asteroid_objects_array:
+                if each_asteroid in gamestate.asteroid_objects_array:
+                    gamestate.asteroid_objects_array.remove(each_asteroid)
 
-        if len(shot_objects_array) > 0:
-            for each_shot in shot_objects_array:
-                if each_shot in shot_objects_array:
-                    shot_objects_array.remove(each_shot)
+        if len(gamestate.shot_objects_array) > 0:
+            for each_shot in gamestate.shot_objects_array:
+                if each_shot in gamestate.shot_objects_array:
+                    gamestate.shot_objects_array.remove(each_shot)
                         
-        if len(shot_objects_array) > 0:
-            for each_shot in shot_objects_array:
-                if each_shot in shot_objects_array:
-                    shot_objects_array.remove(each_shot)        
+        if len(gamestate.shot_objects_array) > 0:
+            for each_shot in gamestate.shot_objects_array:
+                if each_shot in gamestate.shot_objects_array:
+                    gamestate.shot_objects_array.remove(each_shot)
                         
-        if len(alien_ship_objects_array) > 0:
-            for each_alien_ship in alien_ship_objects_array:
-                if each_alien_ship in alien_ship_objects_array:
-                    alien_ship_objects_array.remove(each_alien_ship)
+        if len(gamestate.alien_ship_objects_array) > 0:
+            for each_alien_ship in gamestate.alien_ship_objects_array:
+                if each_alien_ship in gamestate.alien_ship_objects_array:
+                    gamestate.alien_ship_objects_array.remove(each_alien_ship)
 
 
 def return_euclidean_distance(first_object, second_object):
@@ -1448,15 +1517,15 @@ def rotate_these_points_around_that_point(point_x, point_y, center_x, center_y, 
     return new_x, new_y    
         
     
-def handle_keys():
+def handle_keys(gamestate):
 
     ''' Interpret pressed keys as input commands. '''
 
-    global player_ammo
-    global player_is_accelerating
-    global game_paused
-    global keep_window_open
-    global game_is_on_start_screen
+    # global gamestate.player_ammo
+    # global gamestate.player_is_accelerating
+    # global gamestate.game_paused
+    # global keep_window_open
+    # global gamestate.game_is_on_start_screen
     
     ## Is it bad to have a lot of things in the global namespace?
 
@@ -1471,51 +1540,51 @@ def handle_keys():
             if event.key == pygame.K_ESCAPE:
                 sys.exit
                 pygame.quit
-                keep_window_open = False ## NOTE: Only this line ACTUALLY works!
+                gamestate.keep_window_open = False ## NOTE: Only this line ACTUALLY works!
                 # END PROGRAM DOT YES REALLY.
             
             if event.key == pygame.K_r:
-                if game_paused == False:
-                    game_paused = True
-                elif game_paused == True:
-                    game_paused = False
+                if gamestate.game_paused == False:
+                    gamestate.game_paused = True
+                elif gamestate.game_paused == True:
+                    gamestate.game_paused = False
         
-            if ( (len(player_ship_objects_array) > 0) and (game_paused == False) ):
+            if ( (len(gamestate.player_ship_objects_array) > 0) and (gamestate.game_paused == False) ):
                 if ((event.key == pygame.K_SPACE) or (event.key == pygame.K_f)):    
                 
-                    if (are_we_using_player_ammo_this_game == True):
-                        if (player_ammo >= 1):
-                            for each in player_ship_objects_array:
+                    if (gamestate.are_we_using_player_ammo_this_game == True):
+                        if (gamestate.player_ammo >= 1):
+                            for each in gamestate.player_ship_objects_array:
                                 each.fire_particle_cannon()
-                                player_ammo -= 1
+                                gamestate.player_ammo -= 1
                     else:
-                        for each in player_ship_objects_array:
+                        for each in gamestate.player_ship_objects_array:
                             each.fire_particle_cannon()
                         
-                    player_fired_shot = True
+                    gamestate.player_fired_shot = True
             
-            ## If the player hits space, respawn the player ship if the player is dead, player_lives_left > 0, debris_objects_array is empty and we're not on the start screen.
-            elif ( (len(player_ship_objects_array) == 0) and (player_lives_left > 0) and (game_is_on_start_screen == False) and (len(debris_objects_array) == 0) ):
+            ## If the player hits space, respawn the player ship if the player is dead, gamestate.player_lives_left > 0, gamestate.debris_objects_array is empty and we're not on the start screen.
+            elif ( (len(gamestate.player_ship_objects_array) == 0) and (gamestate.player_lives_left > 0) and (gamestate.game_is_on_start_screen == False) and (len(gamestate.debris_objects_array) == 0) ):
                 if event.key == pygame.K_SPACE:
-                    spawn_new_player_ship()
+                    spawn_new_player_ship(gamestate)
                     
-            ## Reset the game to the start screen when the player hits space if the player is dead and player_lives_left <= 0 and we're not on the start screen and debris_objects_array is empty.        
-            elif ( (len(player_ship_objects_array) == 0) and (player_lives_left <= 0) and (game_is_on_start_screen == False) and (len(debris_objects_array) == 0) ):
+            ## Reset the game to the start screen when the player hits space if the player is dead and gamestate.player_lives_left <= 0 and we're not on the start screen and gamestate.debris_objects_array is empty.
+            elif ( (len(gamestate.player_ship_objects_array) == 0) and (gamestate.player_lives_left <= 0) and (gamestate.game_is_on_start_screen == False) and (len(gamestate.debris_objects_array) == 0) ):
                 if event.key == pygame.K_SPACE:
-                    game_is_on_start_screen = True
-                    clear_all_game_objects_from_the_map()
+                    gamestate.game_is_on_start_screen = True
+                    clear_all_game_objects_from_the_map(gamestate)
                     #display_start_screen()
             
             ## If we're on the start screen and the player hits space, clear the start screen and restart the game.
-            elif game_is_on_start_screen == True:
+            elif gamestate.game_is_on_start_screen == True:
                 if event.key == pygame.K_SPACE:
-                    game_is_on_start_screen = False
-                    restart_game()    
+                    gamestate.game_is_on_start_screen = False
+                    restart_game(gamestate)
     
     keys_pressed = pygame.key.get_pressed()
     ## This section, unlike the KEYDOWN section, allows multiple keys to be held down simultaneously.
     
-    if ( (len(player_ship_objects_array) > 0) and (game_paused == False) ):
+    if ( (len(gamestate.player_ship_objects_array) > 0) and (gamestate.game_paused == False) ):
         ## Turn the ship...
         
         x_velocity_modification_amount = 0
@@ -1526,24 +1595,24 @@ def handle_keys():
         ## counter clockwise:
         if ((keys_pressed[pygame.K_LEFT]) or (keys_pressed[pygame.K_a])):
             if PLAYER_HAS_ANGULAR_VELOCITY == True:
-                if player_ship_objects_array[0].angular_velocity > -12:
+                if gamestate.player_ship_objects_array[0].angular_velocity > -12:
                     angular_velocity_modification_amount = -1
                     velocity_adjustment_key_was_pressed = True
                 else:
                     pass
             else:
-                player_ship_objects_array[0].adjust_current_angle(-12)
+                gamestate.player_ship_objects_array[0].adjust_current_angle(-12)
                     
         ## clockwise:                
         if ((keys_pressed[pygame.K_RIGHT]) or (keys_pressed[pygame.K_d])):
             if PLAYER_HAS_ANGULAR_VELOCITY == True:
-                if player_ship_objects_array[0].angular_velocity < 12:
+                if gamestate.player_ship_objects_array[0].angular_velocity < 12:
                     angular_velocity_modification_amount = 1
                     velocity_adjustment_key_was_pressed = True
                 else:
                     pass
             else:
-                player_ship_objects_array[0].adjust_current_angle(12)
+                gamestate.player_ship_objects_array[0].adjust_current_angle(12)
         
         
         ## Move the ship...
@@ -1552,37 +1621,37 @@ def handle_keys():
         if ((keys_pressed[pygame.K_w]) or (keys_pressed[pygame.K_UP])):
             y_velocity_modification_amount = -1
             velocity_adjustment_key_was_pressed = True
-            player_is_accelerating = True
+            gamestate.player_is_accelerating = True
             
         ## leftwards:
         if keys_pressed[pygame.K_q]: 
 
             x_velocity_modification_amount = -1
             velocity_adjustment_key_was_pressed = True
-            player_is_accelerating = True
+            gamestate.player_is_accelerating = True
                 
         ## rightwards:
         if keys_pressed[pygame.K_e]: 
                 
             x_velocity_modification_amount = 1
             velocity_adjustment_key_was_pressed = True
-            player_is_accelerating = True
+            gamestate.player_is_accelerating = True
             
             
         ## Brake the ship:
         if ((keys_pressed[pygame.K_s]) or (keys_pressed[pygame.K_DOWN])):
 
-            player_ship_objects_array[0].brake_all_velocities()
-            player_is_accelerating = True
+            gamestate.player_ship_objects_array[0].brake_all_velocities()
+            gamestate.player_is_accelerating = True
 
                 
         ## Brake the ship's angular velocity only:
         if keys_pressed[pygame.K_z]:
                     
-            player_ship_objects_array[0].brake_all_velocities(only_braking_angular_velocity=True)
+            gamestate.player_ship_objects_array[0].brake_all_velocities(only_braking_angular_velocity=True)
                     
         if velocity_adjustment_key_was_pressed == True:        
-            player_ship_objects_array[0].adjust_all_velocities(x_velocity_modification_amount, y_velocity_modification_amount, angular_velocity_modification_amount)
+            gamestate.player_ship_objects_array[0].adjust_all_velocities(x_velocity_modification_amount, y_velocity_modification_amount, angular_velocity_modification_amount)
     
     
     
@@ -1590,7 +1659,7 @@ def handle_keys():
 
 
 
-    
+
 # # # # Inits # # # #
 
 
@@ -1601,6 +1670,12 @@ screen = pygame.display.set_mode(SCREEN_SIZE)
 ## This is needed for the font.
 pygame.init()
 
+# This function makes a held-down key repeat its KEYDOWN signal
+# with the following two parameters:
+# (repeat_delay_in_milliseconds, repeat_interval_in_milliseconds)
+if SPAM_FIRING is False:
+    pygame.key.set_repeat(20, 20)
+
 ## "intantiate the default system font" ...      |  ref: http://www.nerdparadise.com/tech/python/pygame/basics/part5/
 font = pygame.font.Font(None, 45)
 big_huge_font = pygame.font.Font(None, 150)
@@ -1609,221 +1684,151 @@ tiny_little_font = pygame.font.Font(None, 23)
 ## Create a clock object to make the game run at a specified speed in the main loop
 clock = pygame.time.Clock()
 
-## To keep the game running
-keep_window_open = True
-
-## Window title            
-pygame.display.set_caption(WINDOW_CAPTION)        
-        
-        
-## Init the GameObject arrays
-asteroid_objects_array = []        
-shot_objects_array = []        
-alien_ship_objects_array = []
-player_ship_objects_array = []
-debris_objects_array = []
-player_life_icons_array = []                
-            
-#def __init__(self, starting_x, starting_y, x_velocity, y_velocity, max_velocity, angular_velocity, current_angle_in_degrees=0, size=1, color=WHITE, programmatic_object_shape=1, is_owned_by_player=False):
-                
-            
-## Test asteroids
-#third_new_asteroid_object = GameObject(0, 0, 1, 1, 1, size=100)
-#asteroid_objects_array.append(third_new_asteroid_object)
-
-#second_new_asteroid_object = GameObject(0, 0, 2, 2, 2, color=GREEN, size=50)
-#asteroid_objects_array.append(second_new_asteroid_object)
-
-#new_asteroid_object = GameObject(0, 0, 4, 4, 4, color=RED, size=25)
-#asteroid_objects_array.append(new_asteroid_object)
-
-#fourth_new_asteroid_object = GameObject(0, 0, 8, 8, 8, color=BLUE, size=12)
-#asteroid_objects_array.append(fourth_new_asteroid_object)
+## Window title
+pygame.display.set_caption(WINDOW_CAPTION)
 
 
-
-## Player ship
-## Commented out since we're on the start screen at the start, now.
-#spawn_new_player_ship()
-
-## Initializes a timer to make the player ship blink after it's been spawned. A specialized game ticker.
-## Uhh... one Let's Play had a blink after respawn, another didn't, yet both were otherwise seemingly identical Asteroids!. Gonna leave this out for now.
-time_since_player_ship_spawned = 0
-
-## This should be a constant... maybe?
-are_we_using_player_ammo_this_game = False
-
-player_ammo = 1
+# Init the GameState object. Governs most aspects of the game.
+gamestate = GameState()
 
 
-player_lives_left = 0
-## Commented out since we're on the start screen at the start, now.
-#add_player_life()
-#add_player_life()
-#add_player_life()
-
-## Protects the ship from being dragged to a stop when the player is moving it. Useful when PLAYER_SHIP_HAS_DRAG == True.
-player_is_accelerating = False
-
-## player_fired_shot works alongside player_is_accelerating to prevent exhaust from being shown only when the ship is not being accelerated manually AND the player is firing a shot.
-player_fired_shot = False
-
-## Init the game ticker -- it's used for making things happen at set intervals of each other in the main loop, independent of the game ticker (perhaps this should be factored out in favor of a 100% clock-based system)
-game_ticker = 0
-
-## The player's score
-score = 0
-
-## IMPORTANT: Leave the next line commented to force the player to spam the firing keys instead of allowing them to hold them down.    
-#pygame.key.set_repeat(20, 20)     #  <--- ==  when_a_key_is_held_down_it_will_repeat_its_KEYDOWN_signal_with(repeat_delay_in_milliseconds, repeat_interval_in_milliseconds)
-
-## Starts the game... on the start screen.
-game_is_on_start_screen = True
-
-
-
-## Debugging globals
-ratio_of_max_to_current_this_is_a_debugging_variable = 0
-game_paused = False    
-    
-    
 # # # # Main Loop # # # #
 
-while keep_window_open == True:
-                                        
-    
+while gamestate.keep_window_open == True:
+
+
     ## Input handler variables
     button1_pressed, button2_pressed, button3_pressed = pygame.mouse.get_pressed()
     mouse_position = mouse_x, mouse_y = pygame.mouse.get_pos()
-    
+
     ## The if lets the game keep displaying ship exhaust even when paused, when ship exhaust reasonably ought to continue being displayed.
-    if game_paused == False:
-        player_fired_shot = False
-        player_is_accelerating = False
-    
+    if gamestate.game_paused == False:
+        gamestate.player_fired_shot = False
+        gamestate.player_is_accelerating = False
+
     ## Process keyboard input
-    handle_keys()
-    
-    
+    handle_keys(gamestate)
+
+
     ## Game speed and event progression metering
     clock.tick(30)
-    
+
     ## Asteroids shouldn't be pausible, but this should help with debugging.
-    if game_paused == False:
-        game_ticker += 1
-                
-    if ((game_ticker == 20) and (game_paused == False)):
+    if gamestate.game_paused == False:
+        gamestate.game_ticker += 1
+
+    if ((gamestate.game_ticker == 20) and (gamestate.game_paused == False)):
         ## I don't know if this next line is helpful or not. That's probably a bad thing, but I want to worry about problems other than number size limitations right now! I'll learn it later and remember it forever after that point.
-        game_ticker = 0
-        
-        if are_we_using_player_ammo_this_game == True:
-            if player_ammo < 3:
-                player_ammo += 1 
-        
+        gamestate.game_ticker = 0
+
+        if gamestate.are_we_using_player_ammo_this_game == True:
+            if gamestate.player_ammo < 3:
+                gamestate.player_ammo += 1
+
         ## This controls how often asteroids spawn.
         ## if ( (number of asteroids currently in action) is fewer than (the number we'd prefer) ):
-        if (len(asteroid_objects_array) < 14):
+        if (len(gamestate.asteroid_objects_array) < 14):
             create_new_asteroid_object()
-        elif (len(asteroid_objects_array) < 24):
+        elif (len(gamestate.asteroid_objects_array) < 24):
             asteroid_spawn_chance = random.randint(1, 100)
             if asteroid_spawn_chance > 30:
                 create_new_asteroid_object()
-        elif  (len(asteroid_objects_array) < 36):         
+        elif  (len(gamestate.asteroid_objects_array) < 36):
             asteroid_spawn_chance = random.randint(1, 100)
             if asteroid_spawn_chance > 50:
                 create_new_asteroid_object()
-        elif  (len(asteroid_objects_array) < 48):         
+        elif  (len(gamestate.asteroid_objects_array) < 48):
             asteroid_spawn_chance = random.randint(1, 100)
             if asteroid_spawn_chance > 90:
-                create_new_asteroid_object()        
-        
+                create_new_asteroid_object()
+
         ## This controls how early and how often aliens spawn.
-        if (score >= 20):
-            if (len(alien_ship_objects_array) < 1):
+        if (gamestate.score >= 20):
+            if (len(gamestate.alien_ship_objects_array) < 1):
                 alien_ship_spawn_chance = random.randint(1, 100)
                 if alien_ship_spawn_chance > 80:
-                    randomly_generate_new_alien_ship()
-            elif (len(alien_ship_objects_array) < 2):
+                    randomly_generate_new_alien_ship(gamestate)
+            elif (len(gamestate.alien_ship_objects_array) < 2):
                 alien_ship_spawn_chance = random.randint(1, 100)
                 if alien_ship_spawn_chance > 95:
-                    randomly_generate_new_alien_ship()
-        
+                    randomly_generate_new_alien_ship(gamestate)
+
     ## Move all GameObjects and adjust their angles
-    if ((game_ticker >= 0) and (game_paused == False)):
-    
-        for each_asteroid_object in asteroid_objects_array:
-            each_asteroid_object.move()
+    if ((gamestate.game_ticker >= 0) and (gamestate.game_paused == False)):
+
+        for each_asteroid_object in gamestate.asteroid_objects_array:
+            each_asteroid_object.move(gamestate)
             each_asteroid_object.adjust_current_angle(each_asteroid_object.angular_velocity)
-            
-            
-        for each_player_ship in player_ship_objects_array:
-            each_player_ship.move()
+
+
+        for each_player_ship in gamestate.player_ship_objects_array:
+            each_player_ship.move(gamestate)
             if PLAYER_HAS_ANGULAR_VELOCITY == True:
                 each_player_ship.adjust_current_angle(each_player_ship.angular_velocity)
             if PLAYER_SHIP_HAS_DRAG == True:
-                if ((player_is_accelerating == False) and (player_fired_shot == False)):
+                if ((gamestate.player_is_accelerating == False) and (gamestate.player_fired_shot == False)):
                     each_player_ship.brake_all_velocities(is_gradual_braking=True)
-            
-        
-        for each_shot_object in shot_objects_array:
-            each_shot_object.move()
+
+
+        for each_shot_object in gamestate.shot_objects_array:
+            each_shot_object.move(gamestate)
             each_shot_object.adjust_current_angle(each_shot_object.angular_velocity)
-            
+
             each_shot_object.decrement_duration_and_if_necessary_destroy(1)
-        
-        
-        for each_debris_object in debris_objects_array:
-            each_debris_object.move()
+
+
+        for each_debris_object in gamestate.debris_objects_array:
+            each_debris_object.move(gamestate)
             each_debris_object.adjust_current_angle(each_debris_object.angular_velocity)
-            
+
             ## Positive numbers decrement time remaining, negative numbers increment it. +1 brings it closer to deletion.
             each_debris_object.decrement_duration_and_if_necessary_destroy(1)
-        
-        for each_alien_ship_object in alien_ship_objects_array:
-            each_alien_ship_object.move()
+
+        for each_alien_ship_object in gamestate.alien_ship_objects_array:
+            each_alien_ship_object.move(gamestate)
             ## Alien ships do not rotate.
-            
+
             ## However, they can do other things, such as change directions without warning...
             random_alien_hard_velocity_adjustment_chance = random.randint(1, 100)
             if random_alien_hard_velocity_adjustment_chance > 98:
                 each_alien_ship_object.hard_velocity_adjustment()
-            elif random_alien_hard_velocity_adjustment_chance <= 3:    
+            elif random_alien_hard_velocity_adjustment_chance <= 3:
                 each_alien_ship_object.attempt_to_avoid_an_asteroid()
                 
             ## ... and fire Pixellus Cannons.
             random_alien_shot_chance = random.randint(1, 100)
             if random_alien_shot_chance > 70:
                 each_alien_ship_object.pixellus_cannon_recharge_ticker += 1
-            
+
             if each_alien_ship_object.pixellus_cannon_recharge_ticker >= 10:
                 each_alien_ship_object.shoot_at_random_angle()
                 each_alien_ship_object.pixellus_cannon_recharge_ticker = 0
-    
-    ## This part's debug code ---v    
-    if ( ((game_ticker % 4) == 1) and (game_paused == False) ):
-        
-        #if (len(asteroid_objects_array) > 0):
-        #    # print("\nasteroid_objects_array[0].x_velocity == " + str(asteroid_objects_array[0].x_velocity))
-        #    # print("asteroid_objects_array[0].y_velocity == " + str(asteroid_objects_array[0].y_velocity))
-        #    # print("asteroid_objects_array[0].x == " + str(asteroid_objects_array[0].x))
-        #    # print("asteroid_objects_array[0].y == " + str(asteroid_objects_array[0].y))
-        #    # print("asteroid_objects_array[0].radius == " + str(asteroid_objects_array[0].radius))
 
-        if (len(player_ship_objects_array) > 0):
-            # print("\nplayer_ship_objects_array[0].x_velocity == " + str(player_ship_objects_array[0].x_velocity))
-            # print("player_ship_objects_array[0].y_velocity == " + str(player_ship_objects_array[0].y_velocity))
-            # print("hypotenuse_of_velocities == " + (str(math.sqrt((player_ship_objects_array[0].x_velocity * player_ship_objects_array[0].x_velocity) + (player_ship_objects_array[0].y_velocity * player_ship_objects_array[0].y_velocity)))))
-            # print("ratio_of_max_to_current_vel_hyp == " + str(ratio_of_max_to_current_this_is_a_debugging_variable))
-            # print("player_ship_objects_array[0].current_angle_in_degrees == " + str(player_ship_objects_array[0].current_angle_in_degrees))
-            # print("player_ship_objects_array[0].x == " + str(player_ship_objects_array[0].x))
-            # print("player_ship_objects_array[0].y == " + str(player_ship_objects_array[0].y))
-            # print("player_ship_objects_array[0].radius == " + str(player_ship_objects_array[0].radius))
+    ## This part's debug code ---v
+    if ( ((gamestate.game_ticker % 4) == 1) and (gamestate.game_paused == False) ):
+
+        #if (len(gamestate.asteroid_objects_array) > 0):
+        #    # print("\ngamestate.asteroid_objects_array[0].x_velocity == " + str(gamestate.asteroid_objects_array[0].x_velocity))
+        #    # print("gamestate.asteroid_objects_array[0].y_velocity == " + str(gamestate.asteroid_objects_array[0].y_velocity))
+        #    # print("gamestate.asteroid_objects_array[0].x == " + str(gamestate.asteroid_objects_array[0].x))
+        #    # print("gamestate.asteroid_objects_array[0].y == " + str(gamestate.asteroid_objects_array[0].y))
+        #    # print("gamestate.asteroid_objects_array[0].radius == " + str(gamestate.asteroid_objects_array[0].radius))
+
+        if (len(gamestate.player_ship_objects_array) > 0):
+            # print("\ngamestate.player_ship_objects_array[0].x_velocity == " + str(gamestate.player_ship_objects_array[0].x_velocity))
+            # print("gamestate.player_ship_objects_array[0].y_velocity == " + str(gamestate.player_ship_objects_array[0].y_velocity))
+            # print("hypotenuse_of_velocities == " + (str(math.sqrt((gamestate.player_ship_objects_array[0].x_velocity * gamestate.player_ship_objects_array[0].x_velocity) + (gamestate.player_ship_objects_array[0].y_velocity * gamestate.player_ship_objects_array[0].y_velocity)))))
+            # print("ratio_of_max_to_current_vel_hyp == " + str(gamestate.ratio_of_max_to_current_this_is_a_debugging_variable))
+            # print("gamestate.player_ship_objects_array[0].current_angle_in_degrees == " + str(gamestate.player_ship_objects_array[0].current_angle_in_degrees))
+            # print("gamestate.player_ship_objects_array[0].x == " + str(gamestate.player_ship_objects_array[0].x))
+            # print("gamestate.player_ship_objects_array[0].y == " + str(gamestate.player_ship_objects_array[0].y))
+            # print("gamestate.player_ship_objects_array[0].radius == " + str(gamestate.player_ship_objects_array[0].radius))
 
             pass
 
-        if (len(debris_objects_array) > 0):
-            # print("\ndebris_objects_array[0].x_velocity == " + str(debris_objects_array[0].x_velocity))
-            # print("debris_objects_array[0].y_velocity == " + str(debris_objects_array[0].y_velocity))
+        if (len(gamestate.debris_objects_array) > 0):
+            # print("\ngamestate.debris_objects_array[0].x_velocity == " + str(gamestate.debris_objects_array[0].x_velocity))
+            # print("gamestate.debris_objects_array[0].y_velocity == " + str(gamestate.debris_objects_array[0].y_velocity))
 
             pass
 
@@ -1831,11 +1836,11 @@ while keep_window_open == True:
         # print("MAP_X2 == " + str(MAP_X2))
         # print("MAP_Y == " + str(MAP_Y))
         # print("MAP_Y2 == " + str(MAP_Y2))
-        
+
     ## Note: I think we need to display things AFTER moving them.
-    render_all()                        
-                        
-    
+    render_all(gamestate)
+
+
 
 
 
