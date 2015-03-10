@@ -155,16 +155,17 @@ class GameObject(object):
         # whenever I have enough time to work on something this minor.
         if player_is_accelerating is True:
             if player_fired_shot is False:
-                if self.is_owned_by_player is True:
-                    if isinstance(self, Shot) is False:
-                        if isinstance(self, UserInterfaceObject) is False:
-                            draw_programmatic_object(
-                                self.x,
-                                self.y,
-                                self.current_angle_in_degrees,
-                                this_programmatic_object_shape=-2,
-                                color=self.color,
-                                size=self.size)
+                if isinstance(self, PlayerShip) is True:
+                    # if self.is_owned_by_player is True:
+                    #     if isinstance(self, Shot) is False:
+                    #         if isinstance(self, UserInterfaceObject) is False:
+                    draw_programmatic_object(
+                        self.x,
+                        self.y,
+                        self.current_angle_in_degrees,
+                        this_programmatic_object_shape=-2,
+                        color=self.color,
+                        size=self.size)
 
     def move_by_specified_amount(self, delta_x, delta_y):
         '''
