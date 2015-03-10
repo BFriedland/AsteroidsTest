@@ -554,7 +554,7 @@ class GameObject(object):
         '''
         Decrement remaining duration by supplied duration decrement.
         If (self.duration_remaining <= 0) then destroy self.
-        Used for debris objects.
+        Used for Debris and Shot objects.
         '''
 
         # This is in GameObject because I want it
