@@ -1034,20 +1034,31 @@ class UserInterfaceObject(GameObject):
 
 def spawn_new_player_ship(gamestate):
     ''' Create the player's Ship object. '''
-    
-    # global gamestate.time_since_player_ship_spawned
-    
-    if ( (len(gamestate.player_ship_objects_array) == 0) and (len(gamestate.debris_objects_array) == 0) ):
-        
-        gamestate.time_since_player_ship_spawned = 0
-    
-        new_player_ship_size = NPS_size = 30
-        new_player_ship_starting_coords = NPS_starting_coords_upperleft_x, NPS_starting_coords_upperleft_y = ((SCREEN_WIDTH // 2) - (NPS_size / 2)), ((SCREEN_HEIGHT // 2) - (NPS_size / 2))
 
-        new_player_ship_object = PlayerShip(NPS_starting_coords_upperleft_x, NPS_starting_coords_upperleft_y, 0, 0, 0, is_owned_by_player=True, programmatic_object_shape=0, color=WHITE, size=NPS_size, max_velocity=8)
+    # global gamestate.time_since_player_ship_spawned
+
+    if ((len(gamestate.player_ship_objects_array) == 0)
+       and (len(gamestate.debris_objects_array) == 0)):
+
+        gamestate.time_since_player_ship_spawned = 0
+
+        new_player_ship_size = 30
+        new_player_ship_radius = new_player_ship_size / 2
+
+        player_spawn_upperleft_x = (SCREEN_CENTER_X - new_player_ship_radius)
+        player_spawn_upperleft_y = (SCREEN_CENTER_Y - new_player_ship_radius)
+
+        new_player_ship_object = PlayerShip(player_spawn_upperleft_x,
+                                            player_spawn_upperleft_y,
+                                            0, 0, 0,
+                                            is_owned_by_player=True,
+                                            programmatic_object_shape=0,
+                                            size=new_player_ship_size,
+                                            max_velocity=8)
+
         gamestate.player_ship_objects_array.append(new_player_ship_object)
-    
-    
+
+
 def randomly_generate_new_alien_ship(gamestate):
     '''
     Create a new AlienShip object with randomly
