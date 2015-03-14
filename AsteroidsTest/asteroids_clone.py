@@ -1034,20 +1034,60 @@ class UserInterfaceObject(GameObject):
 
 def spawn_new_player_ship(gamestate):
     ''' Create the player's Ship object. '''
-    
-    # global gamestate.time_since_player_ship_spawned
-    
-    if ( (len(gamestate.player_ship_objects_array) == 0) and (len(gamestate.debris_objects_array) == 0) ):
-        
-        gamestate.time_since_player_ship_spawned = 0
-    
-        new_player_ship_size = NPS_size = 30
-        new_player_ship_starting_coords = NPS_starting_coords_upperleft_x, NPS_starting_coords_upperleft_y = ((SCREEN_WIDTH // 2) - (NPS_size / 2)), ((SCREEN_HEIGHT // 2) - (NPS_size / 2))
 
-        new_player_ship_object = PlayerShip(NPS_starting_coords_upperleft_x, NPS_starting_coords_upperleft_y, 0, 0, 0, is_owned_by_player=True, programmatic_object_shape=0, color=WHITE, size=NPS_size, max_velocity=8)
+    # global gamestate.time_since_player_ship_spawned
+
+    if ((len(gamestate.player_ship_objects_array) == 0)
+       and (len(gamestate.debris_objects_array) == 0)):
+
+        gamestate.time_since_player_ship_spawned = 0
+
+        new_player_ship_size = 30
+        new_player_ship_radius = new_player_ship_size / 2
+
+        player_spawn_upperleft_x = (SCREEN_CENTER_X - new_player_ship_radius)
+        player_spawn_upperleft_y = (SCREEN_CENTER_Y - new_player_ship_radius)
+
+        new_player_ship_object = PlayerShip(player_spawn_upperleft_x,
+                                            player_spawn_upperleft_y,
+                                            0, 0, 0,
+                                            is_owned_by_player=True,
+                                            programmatic_object_shape=0,
+                                            size=new_player_ship_size,
+                                            max_velocity=8)
+
         gamestate.player_ship_objects_array.append(new_player_ship_object)
-    
-    
+
+
+def select_a_spot_on_the_edge_of_the_map():
+
+    # The map is shaped like a box, so all edges of the map
+    # will be on one of these four sides:
+    possible_sides = ['top', 'bottom', 'left', 'right']
+
+    starts_on_this_side = random.sample(possible_sides, 1)[0]
+
+    # Once the side is selected, the initial coordinates are deduced,
+    # and the non-determined axis' coordinate is generated.
+    if starts_on_this_side == 'top':
+        random_starting_x = random.randint(1, MAP_X2)
+        random_starting_y = (MAP_Y + 120)
+
+    elif starts_on_this_side == 'bottom':
+        random_starting_x = random.randint(1, MAP_X2)
+        random_starting_y = (MAP_Y2 - 120)
+
+    elif starts_on_this_side == 'left':
+        random_starting_x = (MAP_X + 120)
+        random_starting_y = random.randint(1, MAP_Y2)
+
+    elif starts_on_this_side == 'right':
+        random_starting_x = (MAP_X2 - 120)
+        random_starting_y = random.randint(1, MAP_Y2)
+
+    return random_starting_x, random_starting_y, starts_on_this_side
+
+
 def randomly_generate_new_alien_ship(gamestate):
     '''
     Create a new AlienShip object with randomly
@@ -1056,56 +1096,30 @@ def randomly_generate_new_alien_ship(gamestate):
 
     # Generate a random direction for the
     # alien ship to travel in at speed 4.
-    # Note: The velocity will be inverted if it threatens to head
-    # straight off the map after spawning;
-    # see below in the placement generator.
+    # Note: The velocity will be inverted if it would
+    # otherwise head straight off the map after spawning.
     random_velocity_angle = random.randint(0, 359)
     random_alien_x_velocity, random_alien_y_velocity \
         = rotate_these_points_around_that_point(0, -5, 0, 0,
                                                 random_velocity_angle)
 
-    random_size_selector = random.randint(1, 2)
-    if random_size_selector == 1:
-        random_alien_size = 40
-    elif random_size_selector == 2:
-        random_alien_size = 20
+    # Alien ships come in only two sizes.
+    random_alien_size = random.sample([20, 40], 1)[0]
 
-    random_x_and_y = random.randint(1, 4)
-    if random_x_and_y <= 2:
-        # Then it's on the top or bottom (use Y values of min and max).
+    selected_location_tuple = select_a_spot_on_the_edge_of_the_map()
+    random_starting_x, random_starting_y, which_side = selected_location_tuple
 
-        # Select the x location:
-        random_starting_x = random.randint(1, MAP_X2)
-        if random_x_and_y == 1:
-            # Then it's on the top.
-            random_starting_y = -120
-            # ... incidentally, -120 should probably be changed
-            # to a fraction of map size, proportional to how much
-            # bigger the map size is compared to the screen...
-            # with a hard minimum bound set at
-            # (radius_of_the_largest_spawnable_object + 1).
-            # But this isn't strictly necessary.
-
-        elif random_x_and_y == 2:
-            # Then it's on the bottom.
-            random_starting_y = (MAP_Y2 - 120)
-            # Keep the alien from sliding off the map immediately.
-            # This is only needed if the ship stars on the bottom.
-            random_alien_y_velocity = (random_alien_y_velocity * -1)
-
-    elif (random_x_and_y > 2):
-        # Then it's on the left or right (use X values of min and max).
-        # Select the y location:
-        random_starting_y = random.randint(1, MAP_Y2)
-        if random_x_and_y == 3:
-                # Then it's on the left.
-                random_starting_x = -120
-        elif random_x_and_y == 4:
-            # Then it's on the right.
-            random_starting_x = (MAP_X2 - 120)
-            # Keep the alien from sliding off the map immediately.
-            # This is only needed if the ship stars on the bottom.
-            random_alien_x_velocity = (random_alien_x_velocity * -1)
+    # If the ship stars on the bottom or the right, flip its
+    # velocity to keep it from sliding off the map immediately.
+    # This will not save things that spawn in a position to slip
+    # off the map because they're close to a corner or set to fly
+    # straight through the the space created by having separate screen
+    # and map sizes. This fix is merely sufficient to allow some ships
+    # to spawn at all on the bottom or right sides of the map.
+    if which_side == 'bottom':
+        random_alien_y_velocity *= -1
+    if which_side == 'right':
+        random_alien_x_velocity *= -1
 
     new_alien_ship_object = AlienShip(random_starting_x,
                                       random_starting_y,
@@ -1114,49 +1128,69 @@ def randomly_generate_new_alien_ship(gamestate):
                                       0,
                                       programmatic_object_shape=-4,
                                       size=random_alien_size)
+
     gamestate.alien_ship_objects_array.append(new_alien_ship_object)
 
 
-def create_new_asteroid_object(supplied_starting_x=None, supplied_starting_y=None, supplied_x_velocity=None, supplied_y_velocity=None, supplied_angular_velocity=None, supplied_asteroid_size=None, supplied_asteroid_shape=None):
-    ''' Create a new Asteroid object, with wholely or partially randomly generated features, at the edge of the map or at specific coordinates, with specific velocity, shape and size, depending on parameters. '''
-    
+def create_new_asteroid_object(supplied_starting_x=None,
+                               supplied_starting_y=None,
+                               supplied_x_velocity=None,
+                               supplied_y_velocity=None,
+                               supplied_angular_velocity=None,
+                               supplied_asteroid_size=None,
+                               supplied_asteroid_shape=None):
+    '''
+    Create a new Asteroid object.
+
+    Asteroids can be spawned either a random spot at the edge of
+    the map or at specific coordinates, and they may be given
+    either specified or random values for velocity, shape, and size.
+    '''
+
+
+
+    # IMPORTANT
+    # This should all be in the class init!
+    # Alien ship one of these should, too!!
+    # Next refax session.
+
+
+
     if ((supplied_x_velocity == None) or (supplied_y_velocity == None)):
         random_x_velocity_selector = random.randint(2, 6)
-        random_y_velocity_selector = random.randint(2, 6) 
+        random_y_velocity_selector = random.randint(2, 6)
     else:
         random_x_velocity_selector = supplied_x_velocity
-        random_y_velocity_selector = supplied_y_velocity    
-    
+        random_y_velocity_selector = supplied_y_velocity
+
     if supplied_angular_velocity == None:
         random_angular_velocity_selector = random.randint(1, 3)
     else:
         random_angular_velocity_selector = supplied_angular_velocity
-    
-    
+
     if supplied_asteroid_size == None:
-        ## If a size was not supplied as a parameter at the function call, generate a number for the asteroid's size.
-        
+        # If a size was not supplied as a parameter at the function call, generate a number for the asteroid's size.
+
         random_size_selector = random.randint(1, 3)
 
-    elif ((supplied_asteroid_size == 100) or (supplied_asteroid_size == 50) or (supplied_asteroid_size == 20)):    
-        
+    elif ((supplied_asteroid_size == 100) or (supplied_asteroid_size == 50) or (supplied_asteroid_size == 20)):
+
         if supplied_asteroid_size == 100:
             random_size_selector = 1
         elif supplied_asteroid_size == 50:
             random_size_selector = 2
         else:
             random_size_selector = 3
-        
+
     else:
         # print("Error in create_new_asteroid_object() ... supplied_asteroid_size == " + str(supplied_asteroid_size))
         pass
 
-    
     if random_size_selector == 1:
         ## Note: These lines are scaling operations rather than randint() creations themselves.
         random_size = 100
         random_starting_x_velocity = (random_x_velocity_selector / 3)
-        random_starting_y_velocity = (random_y_velocity_selector / 3)        
+        random_starting_y_velocity = (random_y_velocity_selector / 3)
         random_max_velocity = 3
         random_angular_velocity = random_angular_velocity_selector
     elif random_size_selector == 2:
@@ -1176,48 +1210,47 @@ def create_new_asteroid_object(supplied_starting_x=None, supplied_starting_y=Non
 
         pass
 
-    
-    if ((supplied_starting_x == None) or (supplied_starting_y == None)):    
-        ## If x and y coords were not supplied as parameters at the function call, generate an asteroid at the edge of the map.
-        
+    if ((supplied_starting_x == None) or (supplied_starting_y == None)):
+        # If x and y coords were not supplied as parameters at the function call, generate an asteroid at the edge of the map.
+
         random_x_and_y = random.randint(1, 4)
-        
+
         if random_x_and_y <= 2:
-            ## Then it's on the top or bottom (use Y values of min and max).
-            
-            ## Select the x location:
+            # Then it's on the top or bottom (use Y values of min and max).
+
+            # Select the x location:
             random_starting_x = random.randint(1, (MAP_X2))
-            
+
             if random_x_and_y == 1:
-                ## Then it's on the top.
+                # Then it's on the top.
                 random_starting_y = -120
-                
+
             elif random_x_and_y == 2:
-                ## Then it's on the bottom.
+                # Then it's on the bottom.
                 random_starting_y = (MAP_Y2 - 120)
-                ## Keeps the asteroid from sliding off the map immediately:
+                # Keeps the asteroid from sliding off the map immediately:
                 random_starting_y_velocity = (random_starting_y_velocity * -1)
-        
+
         elif (random_x_and_y > 2):
-            ## Then it's on the left or right (use X values of min and max).
-            
-            ## Select the y location:
+            # Then it's on the left or right (use X values of min and max).
+
+            # Select the y location:
             random_starting_y = random.randint(1, (MAP_Y2))
-                
+
             if random_x_and_y == 3:
-                ## Then it's on the left.
+                # Then it's on the left.
                 random_starting_x = -120
-                
+
             elif random_x_and_y == 4:
-                ## Then it's on the right.
-                random_starting_x = (MAP_X2 - 120)   
-                
+                # Then it's on the right.
+                random_starting_x = (MAP_X2 - 120)
+
                 ## Keeps the asteroid from sliding off the map immediately:
                 random_starting_x_velocity = (random_starting_x_velocity * -1)
     else:
         random_starting_x = supplied_starting_x
         random_starting_y = supplied_starting_y
-    
+
     if supplied_asteroid_shape == None:
         ## If an asteroid shape number was not supplied as a parameter at the function call, generate an asteroid shape number.
         ## Not enough art assets to be random yet!
@@ -1225,10 +1258,10 @@ def create_new_asteroid_object(supplied_starting_x=None, supplied_starting_y=Non
         random_asteroid_shape = random.randint(1, 4)
     else:
         random_asteroid_shape = supplied_asteroid_shape
-    
+
     new_asteroid_object = Asteroid(random_starting_x, random_starting_y, random_starting_x_velocity, random_starting_y_velocity, random_angular_velocity, current_angle_in_degrees=0, programmatic_object_shape=random_asteroid_shape, size=random_size)
-    
-    
+
+
     gamestate.asteroid_objects_array.append(new_asteroid_object)
 
 
