@@ -1067,56 +1067,41 @@ def randomly_generate_new_alien_ship(gamestate):
 
     # Generate a random direction for the
     # alien ship to travel in at speed 4.
-    # Note: The velocity will be inverted if it threatens to head
-    # straight off the map after spawning;
-    # see below in the placement generator.
+    # Note: The velocity will be inverted if it would
+    # otherwise head straight off the map after spawning.
     random_velocity_angle = random.randint(0, 359)
     random_alien_x_velocity, random_alien_y_velocity \
         = rotate_these_points_around_that_point(0, -5, 0, 0,
                                                 random_velocity_angle)
 
-    random_size_selector = random.randint(1, 2)
-    if random_size_selector == 1:
-        random_alien_size = 40
-    elif random_size_selector == 2:
-        random_alien_size = 20
+    random_alien_size = random.sample([20, 40], 1)[0]
 
-    random_x_and_y = random.randint(1, 4)
-    if random_x_and_y <= 2:
-        # Then it's on the top or bottom (use Y values of min and max).
+    sides = ['top', 'bottom', 'left', 'right']
+    starts_on_this_side = random.sample(sides, 1)[0]
 
-        # Select the x location:
+    if starts_on_this_side == 'top':
         random_starting_x = random.randint(1, MAP_X2)
-        if random_x_and_y == 1:
-            # Then it's on the top.
-            random_starting_y = -120
-            # ... incidentally, -120 should probably be changed
-            # to a fraction of map size, proportional to how much
-            # bigger the map size is compared to the screen...
-            # with a hard minimum bound set at
-            # (radius_of_the_largest_spawnable_object + 1).
-            # But this isn't strictly necessary.
+        random_starting_y = (MAP_Y + 120)
 
-        elif random_x_and_y == 2:
-            # Then it's on the bottom.
-            random_starting_y = (MAP_Y2 - 120)
-            # Keep the alien from sliding off the map immediately.
-            # This is only needed if the ship stars on the bottom.
-            random_alien_y_velocity = (random_alien_y_velocity * -1)
+    elif starts_on_this_side == 'bottom':
+        # Flip the velocity to keep the alien from sliding
+        # off the map immediately. Only needed if the ship
+        # stars on the bottom due to positive default value.
+        random_alien_y_velocity = (random_alien_y_velocity * -1)
+        random_starting_x = random.randint(1, MAP_X2)
+        random_starting_y = (MAP_Y2 - 120)
 
-    elif (random_x_and_y > 2):
-        # Then it's on the left or right (use X values of min and max).
-        # Select the y location:
+    elif starts_on_this_side == 'left':
+        random_starting_x = (MAP_X + 120)
         random_starting_y = random.randint(1, MAP_Y2)
-        if random_x_and_y == 3:
-                # Then it's on the left.
-                random_starting_x = -120
-        elif random_x_and_y == 4:
-            # Then it's on the right.
-            random_starting_x = (MAP_X2 - 120)
-            # Keep the alien from sliding off the map immediately.
-            # This is only needed if the ship stars on the bottom.
-            random_alien_x_velocity = (random_alien_x_velocity * -1)
+
+    elif starts_on_this_side == 'right':
+        # Flip the velocity to keep the alien from sliding
+        # off the map immediately. Only needed if the ship
+        # stars on the bottom due to positive default value.
+        random_alien_x_velocity = (random_alien_x_velocity * -1)
+        random_starting_x = (MAP_X2 - 120)
+        random_starting_y = random.randint(1, MAP_Y2)
 
     new_alien_ship_object = AlienShip(random_starting_x,
                                       random_starting_y,
@@ -1125,6 +1110,7 @@ def randomly_generate_new_alien_ship(gamestate):
                                       0,
                                       programmatic_object_shape=-4,
                                       size=random_alien_size)
+
     gamestate.alien_ship_objects_array.append(new_alien_ship_object)
 
 
