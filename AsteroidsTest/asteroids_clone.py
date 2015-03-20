@@ -1327,23 +1327,31 @@ def render_all(gamestate):
     
     
     pygame.display.flip()
-    
 
-    
+
 def add_player_life(gamestate):
-    ''' Add a life to the player's total. '''
+    '''
+    Add a life to the player's total.
+    '''
 
-    # global gamestate.player_lives_left
-        
+    # When adding a life, a new life icon
+    # must be placed at the correct coordinates.
     new_icon_x = (140 + (gamestate.player_lives_left * 32))
     new_icon_y = 75
 
     gamestate.player_lives_left += 1
-        
-    new_player_life_icon = UserInterfaceObject(new_icon_x, new_icon_y, 0, 0, 0, current_angle_in_degrees=0, size=30, color=WHITE, programmatic_object_shape=0, player_life_icon_number=gamestate.player_lives_left)
-        
+
+    new_player_life_icon = UserInterfaceObject(
+        new_icon_x,
+        new_icon_y,
+        0, 0, 0,
+        size=30,
+        programmatic_object_shape=0,
+        player_life_icon_number=gamestate.player_lives_left
+    )
+
     gamestate.player_life_icons_array.append(new_player_life_icon)
-    
+
 
 def remove_player_life(gamestate):
     ''' Remove a life from the player's total. '''
