@@ -1,0 +1,10 @@
+# Requires Python 3+ and a compatible version of Pygame.
+# Unfortunately, neither of these are easily pip-installable!
+
+# It's been months since I used this, but I'm pretty sure this guide is
+# what I used to install Pygame for Python 3 on OS X:
+# http://florian-berger.de/en/articles/installing-pygame-for-python-3-on-os-x/
+
+# This didn't work when I tried it, but it's the closest I was able to find to
+# a command that pip is able to make progress with:
+# pygame==1.9.1release --allow-external pygame --allow-unverified pygame
